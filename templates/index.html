@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=5) }}">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="panel">
+            <h2>🔐 Iniciar Sesión</h2>
+            <form action="/login" method="POST" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" name="username" required 
+                           placeholder="Ingrese su usuario">
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required
+                           placeholder="Ingrese su contraseña">
+                    <span class="password-toggle" onclick="togglePassword()">👁️</span>
+                </div>
+                <button type="submit" class="btn btn-primary">Ingresar</button>
+            </form>
+
+            <!-- Panel de Recuperación (se muestra después de 3 intentos fallidos) -->
+            {% if mostrar_recuperar %}
+            <div class="recuperar-panel visible">
+                <h3>🔑 Recuperar Contraseña</h3>
+                <form action="/recuperar" method="POST">
+                    <div class="form-group">
+                        <label for="rec_email">Email de recuperación</label>
+                        <input type="email" id="rec_email" name="rec_email" required
+                               placeholder="Ingrese su correo registrado">
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Enviar Instrucciones</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="recuperar-panel" id="recuperarPanel">
+                <h3>🔑 Recuperar Contraseña</h3>
+                <form action="/recuperar" method="POST">
+                    <div class="form-group">
+                        <label for="rec_email">Email de recuperación</label>
+                        <input type="email" id="rec_email" name="rec_email" 
+                               placeholder="Ingrese su correo registrado">
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Enviar Instrucciones</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="intentos-info" id="intentosInfo">
+                Intentos fallidos: <span id="contadorIntentos">{{ intentos }}</span>/3
+            </div>
+
+            <div class="security-badge">
+                <span class="lock-icon">🔒</span>
+                <span>Contraseña encriptada con Bcrypt</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let passwordVisible = false;
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = document.querySelector('.password-toggle');
+            
+            if (passwordVisible) {
+                passwordInput.type = 'password';
+                toggleBtn.textContent = '👁️';
+            } else {
+                passwordInput.type = 'text';
+                toggleBtn.textContent = '🔒';
+            }
+            passwordVisible = !passwordVisible;
+        }
+
+    </script>
+</body>
+</html>

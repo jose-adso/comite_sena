@@ -1,0 +1,40 @@
+# Archivos de Python a ignorar
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Archivos de IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Archivos de base de datos
+*.db
+*.sqlite
+
+# Archivos de entorno virtual
+venv
+env
+.venv
+
+# Archivos de Git
+.git
+.gitignore
+
+# Archivos de Windows
+Thumbs.db
+desktop.ini
+
+# Archivos de prueba
+test
+tests
+*.test

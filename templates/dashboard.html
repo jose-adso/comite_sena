@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=5) }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">Sistema Macro Sena</div>
+        <div class="navbar-menu">
+            <span class="navbar-user">👤 {{ username }}</span>
+            <a href="/logout" class="btn-nav btn-logout">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Bienvenida -->
+        <div class="welcome-card">
+            <h1>✅ ¡Bienvenido!</h1>
+            <p>Ha iniciado sesión exitosamente en el sistema.</p>
+            
+            <div class="user-info">
+                <p><strong>Usuario:</strong> {{ username }}</p>
+                <p><strong>Rol:</strong> <span class="role-badge {% if rol == 'admin' %}role-admin{% else %}role-user{% endif %}">{{ rol }}</span></p>
+            </div>
+        </div>
+
+        <!-- Panel de Admin: Registrar Usuarios -->
+        {% if rol == 'admin' %}
+        <div class="admin-panel show">
+            <h2>📝 Registrar Nuevo Usuario</h2>
+            <form action="/registro" method="POST">
+                <div class="form-group">
+                    <label for="reg_username">Usuario</label>
+                    <input type="text" id="reg_username" name="reg_username" required
+                           placeholder="Nombre de usuario">
+                </div>
+                <div class="form-group">
+                    <label for="reg_nombre">Nombre</label>
+                    <input type="text" id="reg_nombre" name="reg_nombre" required
+                           placeholder="Nombre del usuario">
+                </div>
+                <div class="form-group">
+                    <label for="reg_apellido">Apellido</label>
+                    <input type="text" id="reg_apellido" name="reg_apellido" required
+                           placeholder="Apellido del usuario">
+                </div>
+                <div class="form-group">
+                    <label for="reg_telefono">Teléfono</label>
+                    <input type="text" id="reg_telefono" name="reg_telefono" required
+                           placeholder="Número de teléfono">
+                </div>
+                <div class="form-group">
+                    <label for="reg_email">Email</label>
+                    <input type="email" id="reg_email" name="reg_email" required
+                           placeholder="Correo electrónico">
+                </div>
+                <button type="submit" class="btn btn-primary">Registrar Usuario</button>
+            </form>
+
+            <!-- Lista de Usuarios -->
+            <div class="usuarios-list">
+                <h3>👥 Usuarios Registrados</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario</th>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        <tr>
+                            <td>{{ usuario.id }}</td>
+                            <td>{{ usuario.username }}</td>
+                            <td>{{ usuario.nombre or 'N/A' }}</td>
+                            <td>{{ usuario.apellido or 'N/A' }}</td>
+                            <td>{{ usuario.telefono or 'N/A' }}</td>
+                            <td>{{ usuario.email or 'N/A' }}</td>
+                            <td>{{ usuario.rol }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

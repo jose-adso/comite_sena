@@ -1,0 +1,377 @@
+/* Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Layout */
+.auth-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.panel {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.panel h2 {
+    color: #1e3c72;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #2a5298;
+    padding-bottom: 10px;
+}
+
+.panel p {
+    text-align: center;
+    color: #666;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    padding-right: 45px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #2a5298;
+    box-shadow: 0 0 10px rgba(42, 82, 152, 0.2);
+}
+
+/* Buttons */
+.btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(30, 60, 114, 0.4);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn-nav {
+    padding: 8px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-logout {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-logout:hover {
+    background: #c82333;
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffe8a1;
+}
+
+.security-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 15px;
+    padding: 10px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    color: #2e7d32;
+    font-size: 0.85rem;
+}
+
+.lock-icon {
+    font-size: 1.2rem;
+}
+
+.recuperar-panel {
+    display: none;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.recuperar-panel.visible {
+    display: block;
+}
+
+.intentos-info {
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Dashboard */
+.navbar {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+}
+
+.navbar-brand {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.navbar-menu {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.navbar-user {
+    color: white;
+    font-size: 1rem;
+}
+
+.container-dashboard {
+    max-width: 1000px;
+    margin: 100px auto 40px;
+    padding: 0 20px;
+}
+
+.welcome-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.welcome-card h1 {
+    color: #1e3c72;
+    margin-bottom: 15px;
+}
+
+.user-info {
+    background: #e8f5e9;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    display: inline-block;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.role-admin {
+    background: #ffd700;
+    color: #333;
+}
+
+.role-user {
+    background: #4caf50;
+    color: white;
+}
+
+.admin-panel {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.admin-panel h2 {
+    color: #1e3c72;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #2a5298;
+    padding-bottom: 10px;
+}
+
+.usuarios-list {
+    margin-top: 30px;
+}
+
+.usuarios-list h3 {
+    color: #1e3c72;
+    margin-bottom: 15px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background: #1e3c72;
+    color: white;
+}
+
+tr:hover {
+    background: #f5f5f5;
+}
+
+/* Restablecer Contraseña */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+    border: none;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.card-header i {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.card-body {
+    padding: 40px;
+}
+
+.form-control {
+    border-radius: 10px;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s;
+}
+
+.form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.password-requirements {
+    font-size: 13px;
+    color: #666;
+    margin-top: 10px;
+}
+
+.password-requirements i {
+    color: #28a745;
+    margin-right: 5px;
+}
+
+@media (max-width: 600px) {
+    .navbar {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .container-dashboard {
+        margin-top: 160px;
+    }
+}
