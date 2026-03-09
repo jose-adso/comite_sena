@@ -11,8 +11,8 @@ COPY . .
 
 RUN mkdir -p instance
 
-EXPOSE 5000
+EXPOSE 8080
 
 ENV FLASK_ENV=production
 
-CMD ["python", "app.py"]
+CMD ["python", "app.py", "--port", "8080"]
