@@ -239,9 +239,8 @@ def recuperar():
         db.session.commit()
         
         # Generar enlace de recuperación
-        # Obtener el host desde la petición
-        from flask import request as flask_request
-        base_url = flask_request.host_url.rstrip('/')
+        # Usar puerto fijo 8080
+        base_url = 'http://127.0.0.1:8080'
         enlace = f"{base_url}/restablecer/{token}"
         
         # Crear cuerpo del email en HTML
@@ -400,3 +399,4 @@ def cambiar_password():
         return redirect(url_for('auth.dashboard'))
     
     return render_template('cambiar_password.html', username=session['username'])
+
