@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 from models.database import db, bcrypt
 from models.usuario import Usuario
+from models.falla import Falla
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -70,6 +71,16 @@ def validar_password(password):
     return True, ""
 
 
+def es_admin():
+    """Verifica si el usuario actual es admin o administrador"""
+    return session.get('rol') in ['admin', 'administrador']
+
+
+def es_docente():
+    """Verifica si el usuario actual es docente"""
+    return session.get('rol') == 'docente'
+
+
 # Crear base de datos y usuario admin por defecto
 def init_db():
     from app import app
@@ -104,7 +115,7 @@ def init_db():
 @auth_bp.route('/')
 def index():
     mostrar_registro = False
-    if 'usuario_id' in session and session.get('rol') == 'admin':
+    if 'usuario_id' in session and es_admin():
         mostrar_registro = True
     # Obtener intentos fallidos
     intentos = session.get('intentos_fallidos', 0)
@@ -150,7 +161,7 @@ def login():
 @auth_bp.route('/registro', methods=['POST'])
 def registro():
     # Solo el admin puede registrar nuevos usuarios
-    if 'usuario_id' not in session or session.get('rol') != 'admin':
+    if 'usuario_id' not in session or not es_admin():
         flash('No tiene permisos para registrar usuarios', 'error')
         return redirect(url_for('auth.index'))
     
@@ -159,6 +170,7 @@ def registro():
     apellido = request.form.get('reg_apellido')
     telefono = request.form.get('reg_telefono')
     email = request.form.get('reg_email')
+    rol = request.form.get('reg_rol', 'docente')  # Por defecto docente
     
     # Verificar si el usuario ya existe
     if Usuario.query.filter_by(username=username).first():
@@ -178,7 +190,7 @@ def registro():
     nuevo_usuario = Usuario(
         username=username,
         password_hash=password_hash,
-        rol='usuario',
+        rol=rol,
         nombre=nombre,
         apellido=apellido,
         telefono=telefono,
@@ -224,19 +236,36 @@ def registro():
 
 @auth_bp.route('/recuperar', methods=['POST'])
 def recuperar():
+    print("===== INICIANDO PROCESO DE RECUPERACIÓN =====")
     email = request.form.get('rec_email')
+    print(f"Email recibido: {email}")
     
-    usuario = Usuario.query.filter_by(email=email).first()
-    
-    if usuario:
+    try:
+        usuario = Usuario.query.filter_by(email=email).first()
+        print(f"Usuario encontrado: {usuario}")
+        
+        if usuario is None:
+            print("Usuario no encontrado en la base de datos")
+            flash('El email no está registrado', 'error')
+            return redirect(url_for('auth.index'))
+        
         # Generar token único
         token = secrets.token_hex(16)
         expiracion = datetime.now() + timedelta(hours=1)
+        print(f"Token generado: {token}")
+        print(f"Expiración: {expiracion}")
         
         # Guardar token en la base de datos
-        usuario.token_recuperacion = token
-        usuario.token_expiracion = expiracion
-        db.session.commit()
+        try:
+            usuario.token_recuperacion = token
+            usuario.token_expiracion = expiracion
+            db.session.commit()
+            print("Token guardado exitosamente en la base de datos")
+        except Exception as db_error:
+            print(f"ERROR DE BASE DE DATOS: {db_error}")
+            db.session.rollback()
+            flash('Error al procesar la solicitud. Contacta al administrador.', 'error')
+            return redirect(url_for('auth.index'))
         
         # Generar enlace de recuperación
         # Usar puerto fijo 8080
@@ -280,25 +309,44 @@ def recuperar():
         """
         
         asunto = "Recuperación de Contraseña - Sistema Macro Sena"
-        email_enviado = enviar_email(email, asunto, cuerpo)
         
-        if email_enviado:
-            flash(f'Las instrucciones de recuperación han sido enviadas a {email}', 'success')
-            print(f"===== EMAIL DE RECUPERACIÓN ENVIADO =====")
+        # Agregar logs para el envío de email
+        print(f"===== INTENTANDO ENVIAR EMAIL =====")
+        print(f"SMTP_EMAIL: {SMTP_EMAIL}")
+        print(f"SMTP_SERVER: {SMTP_SERVER}:{SMTP_PORT}")
+        print(f"Destinatario: {email}")
+        
+        try:
+            email_enviado = enviar_email(email, asunto, cuerpo)
+            
+            if email_enviado:
+                flash(f'Las instrucciones de recuperación han sido enviadas a {email}', 'success')
+                print(f"===== EMAIL DE RECUPERACIÓN ENVIADO =====")
+                print(f"Para: {email}")
+                print(f"Token: {token}")
+                print(f"Enlace: {enlace}")
+                print(f"==========================================")
+            else:
+                # Si falla el email, mostrar el enlace en consola
+                print(f"===== EMAIL DE RECUPERACIÓN (ERROR - MOSTRANDO EN CONSOLA) =====")
+                print(f"Para: {email}")
+                print(f"Token: {token}")
+                print(f"Enlace: {enlace}")
+                print(f"===============================================================")
+                flash(f'Error al enviar el correo. Contacta al administrador.', 'error')
+        except Exception as email_error:
+            print(f"ERROR AL ENVIAR EMAIL: {email_error}")
+            # Mostrar enlace en consola como fallback
+            print(f"===== FALLBACK - ENLACE DE RECUPERACIÓN =====")
             print(f"Para: {email}")
             print(f"Token: {token}")
             print(f"Enlace: {enlace}")
-            print(f"==========================================")
-        else:
-            # Si falla el email, mostrar el enlace en consola
-            print(f"===== EMAIL DE RECUPERACIÓN (ERROR - MOSTRANDO EN CONSOLA) =====")
-            print(f"Para: {email}")
-            print(f"Token: {token}")
-            print(f"Enlace: {enlace}")
-            print(f"===============================================================")
-            flash(f'Error al enviar el correo. Contacta al administrador.', 'error')
-    else:
-        flash('El email no está registrado', 'error')
+            print(f"===============================================")
+            flash(f'Error al enviar el correo. El enlace de recuperación es: {enlace}', 'error')
+            
+    except Exception as e:
+        print(f"ERROR GENERAL EN RECUPERACIÓN: {e}")
+        flash('Error al procesar la solicitud. Contacta al administrador.', 'error')
     
     return redirect(url_for('auth.index'))
 
@@ -309,12 +357,124 @@ def dashboard():
         flash('Debe iniciar sesión primero', 'error')
         return redirect(url_for('auth.index'))
     
+    # Redirigir docentes a su vista específica
+    if es_docente():
+        return redirect(url_for('auth.vista_docente'))
+    
     # Obtener lista de usuarios para el admin
     usuarios = []
-    if session.get('rol') == 'admin':
+    if es_admin():
         usuarios = Usuario.query.all()
     
     return render_template('dashboard.html', username=session['username'], rol=session['rol'], usuarios=usuarios)
+
+
+@auth_bp.route('/docente')
+def vista_docente():
+    """Vista del panel docente para registro de fallas"""
+    if 'usuario_id' not in session:
+        flash('Debe iniciar sesión primero', 'error')
+        return redirect(url_for('auth.index'))
+    
+    if not es_docente():
+        flash('No tiene acceso a esta sección', 'error')
+        return redirect(url_for('auth.dashboard'))
+    
+    # Obtener datos del instructor desde la sesión
+    nombre_instructor = session.get('nombre', session.get('username', 'Instructor'))
+    
+    return render_template('docente.html', username=session['username'], nombre_instructor=nombre_instructor)
+
+
+@auth_bp.route('/registrar-falla', methods=['POST'])
+def registrar_falla():
+    """Procesa el registro de fallas de un aprendiz"""
+    if 'usuario_id' not in session:
+        flash('Debe iniciar sesión primero', 'error')
+        return redirect(url_for('auth.index'))
+    
+    if not es_docente():
+        flash('No tiene acceso a esta sección', 'error')
+        return redirect(url_for('auth.dashboard'))
+    
+    # Obtener datos del formulario
+    nombre_instructor = request.form.get('nombre_instructor')
+    cedula_instructor = request.form.get('cedula_instructor')
+    correo_instructor = request.form.get('correo_instructor')
+    nombre_ficha = request.form.get('nombre_ficha')
+    numero_ficha = request.form.get('numero_ficha')
+    nombre_aprendiz = request.form.get('nombre_aprendiz')
+    documento_aprendiz = request.form.get('documento_aprendiz')
+    correo_aprendiz = request.form.get('correo_aprendiz')
+    telefono_aprendiz = request.form.get('telefono_aprendiz')
+    descripcion_faltas = request.form.get('descripcion_faltas')
+    fecha_falta = request.form.get('fecha')
+    
+    # Convertir fecha
+    from datetime import datetime
+    fecha_falta_date = datetime.strptime(fecha_falta, '%Y-%m-%d').date() if fecha_falta else None
+    
+    # Manejar imágenes evidencia
+    evidencias = request.files.getlist('evidencia')
+    archivos_guardados = []
+    evidencia_ruta = ''
+    firma_ruta = ''
+    
+    if evidencias and evidencias[0].filename:
+        # Crear carpeta de evidencias si no existe
+        from app import app
+        import os
+        upload_folder = os.path.join(app.root_path, 'static', 'evidencias')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        for evidencia in evidencias:
+            if evidencia and evidencia.filename:
+                # Generar nombre único
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{evidencia.filename}"
+                filepath = os.path.join(upload_folder, filename)
+                evidencia.save(filepath)
+                archivos_guardados.append(f"evidencias/{filename}")
+        
+        evidencia_ruta = ','.join(archivos_guardados)
+    
+    # Manejar firma
+    firma = request.files.get('firma')
+    if firma and firma.filename:
+        upload_folder = os.path.join(app.root_path, 'static', 'firmas')
+        os.makedirs(upload_folder, exist_ok=True)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"firma_{timestamp}_{firma.filename}"
+        filepath = os.path.join(upload_folder, filename)
+        firma.save(filepath)
+        firma_ruta = f"firmas/{filename}"
+    
+    # Crear registro de falla en la base de datos
+    try:
+        falla = Falla(
+            instructor_id=session['usuario_id'],
+            nombre_instructor=nombre_instructor,
+            cedula_instructor=cedula_instructor,
+            correo_instructor=correo_instructor,
+            nombre_ficha=nombre_ficha,
+            numero_ficha=numero_ficha,
+            nombre_aprendiz=nombre_aprendiz,
+            documento_aprendiz=documento_aprendiz,
+            correo_aprendiz=correo_aprendiz,
+            telefono_aprendiz=telefono_aprendiz,
+            descripcion_faltas=descripcion_faltas,
+            fecha_falta=fecha_falta_date,
+            evidencia=evidencia_ruta,
+            firma=firma_ruta
+        )
+        db.session.add(falla)
+        db.session.commit()
+        flash('Falla registrada exitosamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al registrar la falla: {str(e)}', 'error')
+    
+    return redirect(url_for('auth.vista_docente'))
 
 
 @auth_bp.route('/logout')
@@ -326,8 +486,16 @@ def logout():
 
 @auth_bp.route('/restablecer/<token>', methods=['GET', 'POST'])
 def restablecer_password(token):
+    print(f"===== RUTA /restablecer/{token} ACCEDIDA =====")
+    
     # Buscar usuario con el token
-    usuario = Usuario.query.filter_by(token_recuperacion=token).first()
+    try:
+        usuario = Usuario.query.filter_by(token_recuperacion=token).first()
+        print(f"Usuario encontrado: {usuario}")
+    except Exception as db_error:
+        print(f"ERROR AL BUSCAR USUARIO: {db_error}")
+        flash('El enlace de recuperación no es válido', 'error')
+        return redirect(url_for('auth.index'))
     
     if not usuario:
         flash('El enlace de recuperación no es válido', 'error')
@@ -357,15 +525,21 @@ def restablecer_password(token):
             return redirect(url_for('auth.restablecer_password', token=token))
         
         # Actualizar contraseña
-        usuario.password_hash = bcrypt.generate_password_hash(nueva_password).decode('utf-8')
-        # Limpiar token
-        usuario.token_recuperacion = None
-        usuario.token_expiracion = None
-        usuario.debe_cambiar_password = False
-        db.session.commit()
-        
-        flash('Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión.', 'success')
-        return redirect(url_for('auth.index'))
+        try:
+            usuario.password_hash = bcrypt.generate_password_hash(nueva_password).decode('utf-8')
+            # Limpiar token
+            usuario.token_recuperacion = None
+            usuario.token_expiracion = None
+            usuario.debe_cambiar_password = False
+            db.session.commit()
+            print("===== CONTRASEÑA ACTUALIZADA EXITOSAMENTE =====")
+            flash('Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión.', 'success')
+            return redirect(url_for('auth.index'))
+        except Exception as update_error:
+            print(f"ERROR AL ACTUALIZAR CONTRASEÑA: {update_error}")
+            db.session.rollback()
+            flash('Error al actualizar la contraseña. Contacta al administrador.', 'error')
+            return redirect(url_for('auth.restablecer_password', token=token))
     
     return render_template('restablecer_password.html', token=token)
 
@@ -399,4 +573,43 @@ def cambiar_password():
         return redirect(url_for('auth.dashboard'))
     
     return render_template('cambiar_password.html', username=session['username'])
+
+
+@auth_bp.route('/eliminar-usuario/<int:usuario_id>', methods=['POST'])
+def eliminar_usuario(usuario_id):
+    """Elimina un usuario (solo el admin puede eliminar)"""
+    # Verificar que el usuario esté logueado
+    if 'usuario_id' not in session:
+        flash('Debe iniciar sesión primero', 'error')
+        return redirect(url_for('auth.index'))
+    
+    # Verificar que sea admin (solo admin puede eliminar usuarios)
+    if session.get('rol') not in ['admin', 'administrador']:
+        flash('No tiene permisos para eliminar usuarios', 'error')
+        return redirect(url_for('auth.dashboard'))
+    
+    # No permitir que el admin se elimine a sí mismo
+    if usuario_id == session.get('usuario_id'):
+        flash('No puede eliminarse a sí mismo', 'error')
+        return redirect(url_for('auth.dashboard'))
+    
+    # Buscar el usuario a eliminar
+    usuario = Usuario.query.get(usuario_id)
+    
+    if not usuario:
+        flash('Usuario no encontrado', 'error')
+        return redirect(url_for('auth.dashboard'))
+    
+    # No permitir eliminar al usuario admin principal
+    if usuario.username == 'joserojas':
+        flash('No puede eliminar el usuario administrador principal', 'error')
+        return redirect(url_for('auth.dashboard'))
+    
+    # Eliminar el usuario
+    username_eliminado = usuario.username
+    db.session.delete(usuario)
+    db.session.commit()
+    
+    flash(f'Usuario {username_eliminado} eliminado exitosamente', 'success')
+    return redirect(url_for('auth.dashboard'))
 

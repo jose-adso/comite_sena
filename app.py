@@ -11,6 +11,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Importar configuración de base de datos desde models
 from models.database import db, bcrypt
 from models.usuario import Usuario
+from models.falla import Falla
 from routes.auth import auth_bp
 
 # Inicializar extensiones
@@ -25,7 +26,7 @@ def init_db():
     with app.app_context():
         db.create_all()
         
-        # Contraseña hasheada con bcrypt (12 rondas) - jhoset40@
+        # Contraseña hasheada con bcrypt (12 rondas) - 
         password_hash = '$2b$12$yadSYSCbrymExAMoHYcVle2T4cCGTwlKixJN/XZnlkcoEsxHKJ9Ku'
         
         # Verificar si ya existe el usuario admin
@@ -54,4 +55,4 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=8080)
     args = parser.parse_args()
     init_db()
-    app.run(debug=False, host='0.0.0.0', port=args.port)
+    app.run(debug=True, host='0.0.0.0', port=args.port)

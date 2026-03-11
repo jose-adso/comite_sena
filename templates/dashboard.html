@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=5) }}">
 </head>
@@ -31,7 +32,7 @@
 
         <!-- Bienvenida -->
         <div class="welcome-card">
-            <h1>✅ ¡Bienvenido!</h1>
+            <h1> ¡Bienvenido!</h1>
             <p>Ha iniciado sesión exitosamente en el sistema.</p>
             
             <div class="user-info">
@@ -41,7 +42,7 @@
         </div>
 
         <!-- Panel de Admin: Registrar Usuarios -->
-        {% if rol == 'admin' %}
+        {% if rol == 'admin' or rol == 'administrador' %}
         <div class="admin-panel show">
             <h2>📝 Registrar Nuevo Usuario</h2>
             <form action="/registro" method="POST">
@@ -70,6 +71,15 @@
                     <input type="email" id="reg_email" name="reg_email" required
                            placeholder="Correo electrónico">
                 </div>
+                <div class="form-group">
+                    <label for="reg_rol" class="block mb-2 text-sm font-medium text-gray-700">Rol</label>
+                    <select id="reg_rol" name="reg_rol" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                        <option value="docente">Docente</option>
+                        <option value="planta">Planta</option>
+                        <option value="administrador">Administrador</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary">Registrar Usuario</button>
             </form>
 
@@ -86,6 +96,7 @@
                             <th>Teléfono</th>
                             <th>Email</th>
                             <th>Rol</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -98,6 +109,15 @@
                             <td>{{ usuario.telefono or 'N/A' }}</td>
                             <td>{{ usuario.email or 'N/A' }}</td>
                             <td>{{ usuario.rol }}</td>
+                            <td>
+                                {% if usuario.username != 'joserojas' %}
+                                <form action="/eliminar-usuario/{{ usuario.id }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar al usuario {{ usuario.username }}?');">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Eliminar usuario">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
