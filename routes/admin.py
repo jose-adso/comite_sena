@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash as wz_generate_password_has
 
 from models.database import db
 from models.falla import Falla
-from models.usuario import Usuario
+from models.usuario import Usuario, ROLES_VALIDOS
 from routes.auth import auth_bp
 from routes.utils import es_admin, es_super_o_admin, validar_password
 from routes.utils import get_rol_activo, etiqueta_rol_visible, puede_cambiar_rol, ROLES_ALTERNABLES
@@ -117,3 +117,78 @@ def agregar_admin():
         flash('No fue posible agregar el administrador', 'error')
 
     return redirect(url_for('auth.dashboard'))
+
+
+@auth_bp.route('/registrar-usuario', methods=['GET', 'POST'])
+def registrar_usuario():
+    if 'usuario_id' not in session:
+        flash('Debe iniciar sesión primero', 'error')
+        return redirect(url_for('auth.index'))
+
+    if not es_super_o_admin():
+        flash('No tiene permisos para registrar usuarios', 'error')
+        return redirect(url_for('auth.dashboard'))
+
+    if request.method == 'GET':
+        return render_template(
+            'registrar_usuario.html',
+            username=session['username'],
+            rol=get_rol_activo(),
+            rol_visible=etiqueta_rol_visible(),
+            roles_validos=ROLES_VALIDOS,
+        )
+
+    # POST - Procesar registro
+    nombre = (request.form.get('nombre') or '').strip()
+    apellido = (request.form.get('apellido') or '').strip()
+    correo = (request.form.get('correo') or '').strip().lower()
+    telefono = (request.form.get('telefono') or '').strip()
+    rol = (request.form.get('rol') or '').strip().lower()
+    password = request.form.get('password') or ''
+
+    if not nombre or not correo or not password or not rol:
+        flash('Nombre, correo, rol y contraseña son obligatorios', 'error')
+        return redirect(url_for('auth.registrar_usuario'))
+
+    if rol not in ROLES_VALIDOS:
+        flash('Rol no válido', 'error')
+        return redirect(url_for('auth.registrar_usuario'))
+
+    es_valida, mensaje = validar_password(password)
+    if not es_valida:
+        flash(mensaje, 'error')
+        return redirect(url_for('auth.registrar_usuario'))
+
+    try:
+        existente = Usuario.query.filter_by(email=correo).first()
+        if existente:
+            flash('Ya existe un usuario con ese correo', 'error')
+            return redirect(url_for('auth.registrar_usuario'))
+
+        username_base = correo.split('@')[0] if '@' in correo else correo
+        username_final = username_base
+        indice = 1
+        while Usuario.query.filter_by(username=username_final).first():
+            username_final = f'{username_base}_{indice}'
+            indice += 1
+
+        usuario = Usuario(
+            username=username_final,
+            password_hash=wz_generate_password_hash(password, method='scrypt'),
+            rol=rol,
+            nombre=nombre,
+            apellido=apellido,
+            email=correo,
+            telefono=telefono,
+            debe_cambiar_password=True,
+        )
+        db.session.add(usuario)
+        db.session.commit()
+
+        flash(f'Usuario {nombre} registrado exitosamente con rol {rol}', 'success')
+        return redirect(url_for('auth.dashboard'))
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error registrando usuario: {e}')
+        flash('No fue posible registrar el usuario', 'error')
+        return redirect(url_for('auth.registrar_usuario'))

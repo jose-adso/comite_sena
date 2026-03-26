@@ -36,16 +36,41 @@ def init_db():
                 password_hash=admin_password_hash,
                 nombre='Jose Rojas',
                 email=admin_email,
-                rol='super admin',
+                rol='administrador',
                 debe_cambiar_password=False,
             )
             db.session.add(admin_user)
             db.session.commit()
             print("✅ Usuario admin 'joserojas' creado.")
-        elif admin_user.email != admin_email:
-            admin_user.email = admin_email
-            db.session.commit()
-            print("✅ Email del admin actualizado.")
+        else:
+            cambios = False
+
+            if admin_user.email != admin_email:
+                admin_user.email = admin_email
+                cambios = True
+
+            # Si ADMIN_PASSWORD existe en el servidor, sincroniza el hash del admin.
+            admin_password = os.getenv('ADMIN_PASSWORD')
+            if admin_password:
+                password_ok = False
+                try:
+                    password_ok = bcrypt.check_password_hash(admin_user.password_hash, admin_password)
+                except Exception:
+                    password_ok = False
+
+                if not password_ok:
+                    admin_user.password_hash = bcrypt.generate_password_hash(admin_password).decode('utf-8')
+                    admin_user.debe_cambiar_password = False
+                    cambios = True
+                    print("✅ Contraseña del admin sincronizada desde ADMIN_PASSWORD.")
+
+            if admin_user.rol != 'administrador':
+                admin_user.rol = 'administrador'
+                cambios = True
+
+            if cambios:
+                db.session.commit()
+                print("✅ Datos del admin actualizados.")
 
 if __name__ == '__main__':
     import argparse

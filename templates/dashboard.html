@@ -18,11 +18,13 @@
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
             <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
             <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
+            <a href="{{ url_for('auth.registrar_usuario') }}" class="btn-nav btn-info-nav">👤 Registrar Usuario</a>
             {% elif rol == 'administrador' %}
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
             <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
             <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
+            <a href="{{ url_for('auth.registrar_usuario') }}" class="btn-nav btn-info-nav">👤 Registrar Usuario</a>
             {% elif rol == 'planta' %}
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
