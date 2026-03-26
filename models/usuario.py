@@ -2,7 +2,7 @@ import json
 from models.database import db
 
 # Roles válidos del sistema
-ROLES_VALIDOS = ['admin', 'administrador', 'instructor', 'planta']
+ROLES_VALIDOS = ['super admin', 'administrador', 'instructor', 'planta', 'abogado']
 
 class Usuario(db.Model):
     """Modelo de Usuario para la base de datos"""
