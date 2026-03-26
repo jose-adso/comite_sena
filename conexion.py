@@ -7,7 +7,7 @@ def get_connection():
         port=os.getenv("DB_PORT", "5432"),
         database=os.getenv("DB_NAME", "postgres"),
         user=os.getenv("DB_USER", "postgres1"),
-        password=os.getenv("DB_PASSWORD", "MB35mESjUg7B@")
+        password=os.getenv("DB_PASSWORD", "@MB35mESjUg7B@@")
     )
 
 if __name__ == "__main__":
