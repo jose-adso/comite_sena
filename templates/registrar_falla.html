@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Registrar Falla - Sistema Macro Sena</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
@@ -13,35 +13,7 @@
     <nav class="navbar">
         <div class="navbar-brand">Sistema Macro Sena</div>
         <div class="navbar-menu">
-            {% if rol == 'admin' %}
-            <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
-            <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
-            <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
-            {% elif rol == 'administrador' %}
-            <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
-            <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
-            <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
-            {% elif rol == 'planta' %}
-            <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
-            <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
-            <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
-            {% elif rol == 'instructor' %}
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Mis Reclamos</a>
-            {% endif %}
-            
-            {% if puede_cambiar_rol %}
-            <form action="{{ url_for('auth.cambiar_rol') }}" method="POST" class="navbar-role-form">
-                <label for="rol_activo" class="navbar-role-label">Rol:</label>
-                <select id="rol_activo" name="rol_activo" class="navbar-role-select" onchange="this.form.submit()" aria-label="Cambiar rol activo">
-                    {% for rol_opcion in roles_alternables %}
-                    <option value="{{ rol_opcion }}" {% if rol == rol_opcion %}selected{% endif %}>{{ rol_opcion|capitalize }}</option>
-                    {% endfor %}
-                </select>
-            </form>
-            {% endif %}
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">← Volver al Dashboard</a>
             <span class="navbar-user">👤 {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
             <a href="/logout" class="btn-nav btn-logout">Cerrar Sesión</a>
         </div>
@@ -59,33 +31,11 @@
             {% endif %}
         {% endwith %}
 
-        {% if rol == 'admin' %}
-        <div class="admin-panel" style="margin-bottom: 20px;">
-            <h2>➕ Agregar Administrador</h2>
-            <form action="{{ url_for('auth.agregar_admin') }}" method="POST">
-                <div class="form-group">
-                    <label for="admin_nombre">Nombre</label>
-                    <input type="text" id="admin_nombre" name="admin_nombre" required placeholder="Nombre completo">
-                </div>
-                <div class="form-group">
-                    <label for="admin_correo">Correo</label>
-                    <input type="email" id="admin_correo" name="admin_correo" required placeholder="correo@dominio.com">
-                </div>
-                <div class="form-group">
-                    <label for="admin_password">Contraseña temporal</label>
-                    <input type="password" id="admin_password" name="admin_password" required minlength="8" placeholder="Contraseña temporal">
-                </div>
-                <button type="submit" class="btn btn-primary">Crear administrador</button>
-            </form>
-        </div>
-        {% endif %}
-
-        <!-- Panel de Instructor: Formulario de Registrar Falla -->
-        {% if rol == 'instructor' %}
+        <!-- Panel Formulario de Fallas -->
         <div class="admin-panel">
             <h2>📝 Registro de Fallas de Aprendiz</h2>
             <p style="text-align: left; color: #555; margin-bottom: 20px;">
-                <strong>Instructor:</strong> {{ username }}
+                <strong>Instructor:</strong> {{ nombre_instructor }}
             </p>
             
             <form method="POST" action="/registrar-falla" enctype="multipart/form-data">
@@ -174,59 +124,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-        {% endif %}
-
-        <!-- Panel de Fallas Nuevas (solo para admin, administrador y planta) -->
-        {% if es_admin %}
-        <div class="admin-panel">
-            <h2>📌 Registro de Fallas Recientes</h2>
-            {% if fallas_nuevas %}
-            <div class="table-responsive">
-                <table class="fallas-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Fecha Registro</th>
-                            <th>Instructor</th>
-                            <th>Ficha</th>
-                            <th>Aprendiz</th>
-                            <th>Descripción</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for falla in fallas_nuevas %}
-                        <tr>
-                            <td>#{{ falla.id }}</td>
-                            <td>{{ falla.fecha_registro.strftime('%d/%m/%Y %H:%M') if falla.fecha_registro else 'N/A' }}</td>
-                            <td>{{ falla.nombre_instructor }}</td>
-                            <td>{{ falla.nombre_ficha }}</td>
-                            <td>{{ falla.nombre_aprendiz }}</td>
-                            <td>{{ falla.descripcion_faltas|truncate(30) }}</td>
-                            <td>
-                                <a href="/generar-formato/{{ falla.id }}" class="btn btn-info btn-sm" title="Generar PDF">
-                                    <i class="fas fa-file-pdf"></i> PDF
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="empty-state">
-                <p>No hay fallas nuevas registradas.</p>
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        <!-- Información del rol actual -->
-        <div class="admin-panel" style="margin-top: 20px;">
-            <h2>ℹ️ Información de Sesión</h2>
-            <p><strong>Usuario:</strong> {{ username }}</p>
-            <p><strong>Rol activo:</strong> {{ rol_visible|capitalize }}</p>
         </div>
     </div>
 </body>

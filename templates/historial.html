@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Reclamos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">Sistema Macro Sena</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">← Volver al Dashboard</a>
+            <span class="navbar-user">👤 {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
+            <a href="/logout" class="btn-nav btn-logout">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Panel de Historial -->
+        <div class="admin-panel show">
+            <h2>📋 Historial de Reclamos</h2>
+            
+            <!-- Filtros -->
+            <div class="filtros-container" style="margin-bottom: 20px; padding: 15px; background-color: #f9fafb; border-radius: 8px;">
+                <form method="GET" action="{{ url_for('auth.vista_historial') }}" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <label for="filter_instructor" class="block mb-2 text-sm font-medium text-gray-700">Filtrar por Instructor</label>
+                        <input type="text" id="filter_instructor" name="filter_instructor" 
+                               placeholder="Nombre del instructor"
+                               value="{{ request.args.get('filter_instructor', '') }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div style="flex: 1; min-width: 250px;">
+                        <label for="filter_aprendiz" class="block mb-2 text-sm font-medium text-gray-700">Filtrar por Aprendiz</label>
+                        <input type="text" id="filter_aprendiz" name="filter_aprendiz" 
+                               placeholder="Nombre del aprendiz"
+                               value="{{ request.args.get('filter_aprendiz', '') }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" class="btn btn-primary">🔍 Buscar</button>
+                    <a href="{{ url_for('auth.vista_historial') }}" class="btn btn-info-nav">Limpiar Filtros</a>
+                </form>
+            </div>
+
+            <!-- Tabla de Reclamos -->
+            <div class="reclamos-table">
+                {% if fallas %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Instructor</th>
+                            <th>Ficha</th>
+                            <th>Aprendiz</th>
+                            <th>Descripción</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for falla in fallas %}
+                        <tr>
+                            <td>{{ falla.id }}</td>
+                            <td>{{ falla.fecha_registro.strftime('%d/%m/%Y') if falla.fecha_registro else 'N/A' }}</td>
+                            <td>{{ falla.nombre_instructor or 'N/A' }}</td>
+                            <td>{{ falla.numero_ficha or 'N/A' }}</td>
+                            <td>{{ falla.nombre_aprendiz or 'N/A' }}</td>
+                            <td>
+                                <span title="{{ falla.descripcion_faltas or '' }}">
+                                    {{ (falla.descripcion_faltas[:50] + '...') if falla.descripcion_faltas and falla.descripcion_faltas|length > 50 else falla.descripcion_faltas or 'N/A' }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('auth.generar_formato', falla_id=falla.id) }}" 
+                                   class="btn btn-sm" style="padding: 6px 12px; background-color: #f59e0b; color: white; border-radius: 4px; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;"
+                                   title="Generar PDF"
+                                   download>
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="padding: 30px; text-align: center; color: #6b7280;">
+                    <p><i class="fas fa-inbox" style="font-size: 3em; margin-bottom: 10px;"></i></p>
+                    <p>No hay reclamos registrados con los filtros aplicados.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .reclamos-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .reclamos-table th {
+            background-color: #f3f4f6;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .reclamos-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #374151;
+        }
+        
+        .reclamos-table tr:hover {
+            background-color: #f9fafb;
+        }
+        
+        .reclamos-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .btn-sm {
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+    </style>
+</body>
+</html>

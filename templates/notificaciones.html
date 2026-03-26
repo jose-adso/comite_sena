@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Notificaciones PDF</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+	<nav class="navbar">
+		<div class="navbar-brand">Sistema Macro Sena</div>
+		<div class="navbar-menu">
+			<a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">← Volver al Dashboard</a>
+				<span class="navbar-user">👤 {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
+			<a href="/logout" class="btn-nav btn-logout">Cerrar Sesión</a>
+		</div>
+	</nav>
+
+	<div class="container-dashboard">
+		{% with messages = get_flashed_messages(with_categories=true) %}
+			{% if messages %}
+				{% for category, message in messages %}
+					<div class="alert alert-{{ category }}">
+						{{ message }}
+					</div>
+				{% endfor %}
+			{% endif %}
+		{% endwith %}
+
+		<div class="admin-panel show">
+			<h2>📄 Generar Notificaciones desde Plantillas</h2>
+			<p style="margin-bottom: 20px; color: #4b5563;">
+				Este panel usa las plantillas ubicadas en <strong>static/plantillas</strong>.
+			</p>
+
+			<form method="GET" action="{{ url_for('auth.vista_notificaciones') }}" style="margin-bottom: 20px; padding: 15px; background-color: #f9fafb; border-radius: 8px;">
+				<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+					<div style="flex: 1; min-width: 220px;">
+						<label for="filter_instructor">Filtrar por instructor</label>
+						<input
+							type="text"
+							id="filter_instructor"
+							name="filter_instructor"
+							value="{{ filtro_instructor or '' }}"
+							placeholder="Nombre del instructor"
+							class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+						>
+					</div>
+					<div style="flex: 1; min-width: 220px;">
+						<label for="filter_aprendiz">Filtrar por aprendiz</label>
+						<input
+							type="text"
+							id="filter_aprendiz"
+							name="filter_aprendiz"
+							value="{{ filtro_aprendiz or '' }}"
+							placeholder="Nombre del aprendiz"
+							class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+						>
+					</div>
+					<button type="submit" class="btn btn-primary">Filtrar</button>
+					<a href="{{ url_for('auth.vista_notificaciones') }}" class="btn btn-info-nav">Limpiar</a>
+				</div>
+			</form>
+
+			<form action="{{ url_for('auth.generar_notificacion_pdf') }}" method="POST">
+				<div class="form-group">
+					<label for="plantilla">Plantilla</label>
+					<select id="plantilla" name="plantilla" required class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+						<option value="">Seleccione una plantilla</option>
+						{% for plantilla in plantillas %}
+						<option value="{{ plantilla }}">{{ plantilla }}</option>
+						{% endfor %}
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="falla_id">Registro de falla</label>
+					<select id="falla_id" name="falla_id" required class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+						<option value="">Seleccione un registro</option>
+						{% for falla in fallas %}
+						<option value="{{ falla.id }}">
+							#{{ falla.id }} | Instructor: {{ falla.nombre_instructor }} | Aprendiz: {{ falla.nombre_aprendiz }} | Ficha: {{ falla.numero_ficha }}
+						</option>
+						{% endfor %}
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="fecha_citacion">Fecha Citación</label>
+					<input type="date" id="fecha_citacion" name="fecha_citacion" required class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+				</div>
+
+				<button type="submit" class="btn btn-primary">Generar PDF</button>
+			</form>
+
+			<div style="margin-top: 24px; padding: 12px; border-radius: 8px; background: #f9fafb; color: #374151;">
+				<strong>Reemplazos configurados:</strong>
+				<ul style="margin-top: 8px; list-style: disc; padding-left: 20px;">
+					<li>[Fecha Carta] → Fecha actual en formato largo</li>
+					<li>[Nombre Ficha] → Nombre Ficha</li>
+					<li>[Numero Ficha] → Número de Ficha</li>
+					<li>[Nombre instructor] → Nombre Instructor</li>
+					<li>[Nombre Aprendiz] → Nombre Aprendiz</li>
+					<li>[documento aprendiz] → Documento Aprendiz</li>
+					<li>[Hora] → Inicia en 8:00 y aumenta cada 15 minutos</li>
+					<li>[Fecha Citación] → Fecha seleccionada en el formulario</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

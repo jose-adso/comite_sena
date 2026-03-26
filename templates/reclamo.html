@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Reclamo - Sistema Macro Sena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">Sistema Macro Sena</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">← Volver</a>
+            <span class="navbar-user">👤 {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
+            <a href="/logout" class="btn-nav btn-logout">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-panel">
+            <h2>📋 Registro de Reclamo del Instructor</h2>
+            <p style="text-align:left; color:#555; margin-bottom:20px;">
+                Complete el formulario con la información del reclamo. Los campos marcados con <span style="color:red">*</span> son obligatorios.
+            </p>
+
+            <form method="POST" action="{{ url_for('auth.registrar_reclamo') }}" enctype="multipart/form-data">
+
+                <!-- Datos del Instructor -->
+                <h3 style="margin-bottom:12px; color:#374151; font-size:1rem; font-weight:600; border-bottom:2px solid #e5e7eb; padding-bottom:6px;">
+                    👨‍🏫 Datos del Instructor
+                </h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:15px; margin-bottom:20px;">
+                    <div class="form-group">
+                        <label for="nombre_instructor">Nombre Completo <span style="color:red">*</span></label>
+                        <input type="text" id="nombre_instructor" name="nombre_instructor"
+                               value="{{ nombre_instructor }}" required placeholder="Nombre completo del instructor">
+                    </div>
+                    <div class="form-group">
+                        <label for="cedula_instructor">Cédula <span style="color:red">*</span></label>
+                        <input type="text" id="cedula_instructor" name="cedula_instructor"
+                               required placeholder="Número de cédula"
+                               pattern="[0-9]+" title="Solo números">
+                    </div>
+                    <div class="form-group">
+                        <label for="correo_instructor">Correo electrónico <span style="color:red">*</span></label>
+                        <input type="email" id="correo_instructor" name="correo_instructor"
+                               value="{{ correo_instructor }}" required placeholder="correo@institucion.edu.co">
+                    </div>
+                </div>
+
+                <!-- Datos del Aprendiz -->
+                <h3 style="margin-bottom:12px; color:#374151; font-size:1rem; font-weight:600; border-bottom:2px solid #e5e7eb; padding-bottom:6px;">
+                    🎓 Datos del Aprendiz
+                </h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:15px; margin-bottom:20px;">
+                    <div class="form-group">
+                        <label for="nombre_aprendiz">Nombre del Aprendiz <span style="color:red">*</span></label>
+                        <input type="text" id="nombre_aprendiz" name="nombre_aprendiz"
+                               required placeholder="Nombre completo del aprendiz">
+                    </div>
+                    <div class="form-group">
+                        <label for="documento_aprendiz">Documento del Aprendiz <span style="color:red">*</span></label>
+                        <input type="text" id="documento_aprendiz" name="documento_aprendiz"
+                               required placeholder="Número de documento"
+                               pattern="[0-9]+" title="Solo números">
+                    </div>
+                    <div class="form-group">
+                        <label for="nombre_ficha">Nombre de la Ficha <span style="color:red">*</span></label>
+                        <input type="text" id="nombre_ficha" name="nombre_ficha"
+                               required placeholder="Ej: Tecnólogo en Sistemas">
+                    </div>
+                    <div class="form-group">
+                        <label for="numero_ficha">Número de Ficha <span style="color:red">*</span></label>
+                        <input type="text" id="numero_ficha" name="numero_ficha"
+                               required placeholder="Ej: 2601234"
+                               pattern="[0-9]+" title="Solo números">
+                    </div>
+                </div>
+
+                <!-- Detalles del Reclamo -->
+                <h3 style="margin-bottom:12px; color:#374151; font-size:1rem; font-weight:600; border-bottom:2px solid #e5e7eb; padding-bottom:6px;">
+                    📝 Detalles del Reclamo
+                </h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:15px; margin-bottom:20px;">
+                    <div class="form-group">
+                        <label for="tipo_reclamo">Tipo de Reclamo <span style="color:red">*</span></label>
+                        <select id="tipo_reclamo" name="tipo_reclamo" required>
+                            <option value="">-- Seleccione un tipo --</option>
+                            {% for tipo in tipos_reclamo %}
+                            <option value="{{ tipo }}">{{ tipo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fecha_incidente">📅 Fecha del Incidente <span style="color:red">*</span></label>
+                        <input type="date" id="fecha_incidente" name="fecha_incidente" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="descripcion">Descripción del Reclamo <span style="color:red">*</span></label>
+                    <textarea id="descripcion" name="descripcion" required rows="5"
+                              placeholder="Describa detalladamente la situación que motiva el reclamo..."
+                              style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+
+                <!-- Evidencia -->
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="evidencia">📎 Evidencia Adjunta (opcional)</label>
+                    <input type="file" id="evidencia" name="evidencia"
+                           accept=".jpg,.jpeg,.png,.webp,.pdf"
+                           style="display:block; margin-top:6px;">
+                    <small style="color:#6b7280;">Formatos permitidos: JPG, PNG, WEBP, PDF. Máximo un archivo.</small>
+                </div>
+
+                <!-- Botones -->
+                <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:10px;">
+                    <a href="{{ url_for('auth.dashboard') }}" class="btn btn-info-nav">Cancelar</a>
+                    <button type="reset" class="btn btn-info-nav" style="background:#f3f4f6; color:#374151; border:1px solid #d1d5db;">
+                        Limpiar
+                    </button>
+                    <button type="submit" class="btn btn-primary">📤 Registrar Reclamo</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,18 +1,22 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(32)  # Clave secreta segura
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///usuarios.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///usuarios.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Importar configuración de base de datos desde models
 from models.database import db, bcrypt
 from models.usuario import Usuario
 from models.falla import Falla
-from routes.auth import auth_bp
+from models.reclamo import Reclamo
+from routes import auth_bp
 
 # Inicializar extensiones
 db.init_app(app)
@@ -21,33 +25,37 @@ bcrypt.init_app(app)
 # Registrar Blueprint de rutas
 app.register_blueprint(auth_bp)
 
-# Inicializar base de datos y crear usuario admin por defecto
+# Inicializar base de datos
 def init_db():
     with app.app_context():
         db.create_all()
         
-        # Contraseña hasheada con bcrypt (12 rondas) - 
-        password_hash = '$2b$12$yadSYSCbrymExAMoHYcVle2T4cCGTwlKixJN/XZnlkcoEsxHKJ9Ku'
+        # Crear usuario admin si no existe
+        admin_username = 'joserojas'
+        admin_email = 'jhoset40@gmail.com'
+        admin_password_hash = os.getenv('ADMIN_PASSWORD_HASH')
         
-        # Verificar si ya existe el usuario admin
-        admin_existe = Usuario.query.filter_by(username='joserojas').first()
+        if not admin_password_hash:
+            print("❌ Error: ADMIN_PASSWORD_HASH no está definido en .env")
+            return
         
-        if not admin_existe:
-            admin = Usuario(
-                username='joserojas',
-                password_hash=password_hash,
+        admin_user = Usuario.query.filter_by(username=admin_username).first()
+        if not admin_user:
+            admin_user = Usuario(
+                username=admin_username,
+                password_hash=admin_password_hash,
+                nombre='Jose Rojas',
+                email=admin_email,
                 rol='admin',
-                email='joserojas201890@gmail.com',
-                nombre='Admin',
-                apellido='Principal',
-                telefono='3123678307',
-                debe_cambiar_password=False
+                debe_cambiar_password=False,
             )
-            db.session.add(admin)
+            db.session.add(admin_user)
             db.session.commit()
-            print("Usuario admin 'joserojas' creado exitosamente")
-        else:
-            print("El usuario admin 'joserojas' ya existe")
+            print("✅ Usuario admin 'joserojas' creado.")
+        elif admin_user.email != admin_email:
+            admin_user.email = admin_email
+            db.session.commit()
+            print("✅ Email del admin actualizado.")
 
 if __name__ == '__main__':
     import argparse

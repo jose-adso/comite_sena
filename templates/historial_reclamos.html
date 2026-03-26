@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Reclamos - Sistema Macro Sena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+    <style>
+        .badge-pendiente   { background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:9999px; font-size:.75rem; font-weight:600; }
+        .badge-revision    { background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:9999px; font-size:.75rem; font-weight:600; }
+        .badge-resuelto    { background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:9999px; font-size:.75rem; font-weight:600; }
+        .badge-rechazado   { background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:9999px; font-size:.75rem; font-weight:600; }
+        .modal-overlay {
+            display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+            z-index:1000; align-items:center; justify-content:center;
+        }
+        .modal-overlay.active { display:flex; }
+        .modal-box {
+            background:#fff; border-radius:12px; padding:28px; width:100%; max-width:480px;
+            box-shadow:0 20px 60px rgba(0,0,0,.25);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">Sistema Macro Sena</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">← Volver al Dashboard</a>
+            <span class="navbar-user">👤 {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
+            <a href="/logout" class="btn-nav btn-logout">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-panel show">
+            <h2>📋 Historial de Reclamos de Instructores</h2>
+
+            <!-- Filtros -->
+            <div style="margin-bottom:20px; padding:15px; background:#f9fafb; border-radius:8px;">
+                <form method="GET" action="{{ url_for('auth.historial_reclamos') }}"
+                      style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                    <div style="flex:1; min-width:220px;">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Filtrar por Instructor</label>
+                        <input type="text" name="instructor" value="{{ instructor_filtro }}"
+                               placeholder="Nombre del instructor"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div style="flex:1; min-width:180px;">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Estado</label>
+                        <select name="estado"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Todos</option>
+                            {% for e in estados %}
+                            <option value="{{ e }}" {% if e == estado_filtro %}selected{% endif %}>{{ e }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">🔍 Buscar</button>
+                    <a href="{{ url_for('auth.historial_reclamos') }}" class="btn btn-info-nav">Limpiar</a>
+                </form>
+            </div>
+
+            <!-- Tabla -->
+            <div class="reclamos-table">
+                {% if reclamos %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Fecha Registro</th>
+                            <th>Instructor</th>
+                            <th>Aprendiz</th>
+                            <th>Ficha</th>
+                            <th>Tipo</th>
+                            <th>Fecha Incidente</th>
+                            <th>Estado</th>
+                            <th>Evidencia</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reclamos %}
+                        <tr>
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.fecha_registro.strftime('%d/%m/%Y') if r.fecha_registro else 'N/A' }}</td>
+                            <td>
+                                <strong>{{ r.nombre_instructor }}</strong><br>
+                                <small style="color:#6b7280;">{{ r.cedula_instructor }}</small>
+                            </td>
+                            <td>
+                                {{ r.nombre_aprendiz }}<br>
+                                <small style="color:#6b7280;">{{ r.documento_aprendiz }}</small>
+                            </td>
+                            <td>
+                                {{ r.nombre_ficha }}<br>
+                                <small style="color:#6b7280;">Ficha {{ r.numero_ficha }}</small>
+                            </td>
+                            <td>{{ r.tipo_reclamo }}</td>
+                            <td>{{ r.fecha_incidente.strftime('%d/%m/%Y') if r.fecha_incidente else 'N/A' }}</td>
+                            <td>
+                                {% set estado_lower = r.estado|lower %}
+                                {% if estado_lower == 'pendiente' %}
+                                    <span class="badge-pendiente">{{ r.estado }}</span>
+                                {% elif 'revisi' in estado_lower %}
+                                    <span class="badge-revision">{{ r.estado }}</span>
+                                {% elif estado_lower == 'resuelto' %}
+                                    <span class="badge-resuelto">{{ r.estado }}</span>
+                                {% else %}
+                                    <span class="badge-rechazado">{{ r.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.evidencia %}
+                                <a href="{{ url_for('static', filename=r.evidencia) }}" target="_blank" class="btn-nav btn-info-nav" style="font-size:.75rem;">
+                                    📎 Ver
+                                </a>
+                                {% else %}
+                                <span style="color:#9ca3af;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button onclick="abrirModal({{ r.id }}, '{{ r.estado }}', '{{ (r.observacion_admin or '')|replace("'", "\\'") }}')"
+                                        class="btn btn-primary" style="font-size:.75rem; padding:4px 10px;">
+                                    ✏️ Actualizar
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Fila descripción -->
+                        <tr>
+                            <td colspan="10" style="background:#f9fafb; padding:8px 16px; font-size:.85rem; color:#374151;">
+                                <strong>Descripción:</strong> {{ r.descripcion }}
+                                {% if r.observacion_admin %}
+                                <br><strong style="color:#1d4ed8;">Observación admin:</strong> {{ r.observacion_admin }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align:center; padding:40px; color:#6b7280;">
+                    <p style="font-size:2rem; margin-bottom:8px;">📭</p>
+                    <p>No hay reclamos registrados
+                    {% if estado_filtro or instructor_filtro %}con los filtros aplicados{% endif %}.</p>
+                    {% if estado_filtro or instructor_filtro %}
+                    <a href="{{ url_for('auth.historial_reclamos') }}" class="btn btn-info-nav" style="margin-top:10px;">Limpiar filtros</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Actualizar Estado -->
+    <div id="modal-overlay" class="modal-overlay" onclick="cerrarModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:16px; font-weight:700; font-size:1.1rem;">✏️ Actualizar Reclamo</h3>
+            <form id="form-actualizar" method="POST">
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label for="modal-estado">Estado <span style="color:red">*</span></label>
+                    <select id="modal-estado" name="estado" required>
+                        {% for e in estados %}
+                        <option value="{{ e }}">{{ e }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="modal-obs">Observación (opcional)</label>
+                    <textarea id="modal-obs" name="observacion_admin" rows="4"
+                              placeholder="Agregue una observación para el instructor..."
+                              style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="button" onclick="cerrarModal()" class="btn btn-info-nav" style="background:#f3f4f6; color:#374151; border:1px solid #d1d5db;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function abrirModal(id, estado, observacion) {
+            document.getElementById('form-actualizar').action = '/actualizar-reclamo/' + id;
+            document.getElementById('modal-estado').value = estado;
+            document.getElementById('modal-obs').value = observacion;
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        function cerrarModal(event) {
+            if (!event || event.target === document.getElementById('modal-overlay')) {
+                document.getElementById('modal-overlay').classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -8,7 +8,13 @@
 
 body {
     min-height: 100vh;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background:
+        linear-gradient(rgba(8, 35, 22, 0.55), rgba(8, 35, 22, 0.55)),
+        url("../16%20mar%202026,%2009_19_27.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
 a {
@@ -31,18 +37,23 @@ a {
 }
 
 .panel {
-    background: rgba(255, 255, 255, 0.95);
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+        url("../16%20mar%202026,%2009_19_27.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .panel h2 {
-    color: #1e3c72;
+    color: #0f5132;
     text-align: center;
     margin-bottom: 25px;
     font-size: 1.5rem;
-    border-bottom: 2px solid #2a5298;
+    border-bottom: 2px solid #198754;
     padding-bottom: 10px;
 }
 
@@ -76,8 +87,18 @@ a {
 
 .form-group input:focus {
     outline: none;
-    border-color: #2a5298;
-    box-shadow: 0 0 10px rgba(42, 82, 152, 0.2);
+    border-color: #198754;
+    box-shadow: 0 0 10px rgba(25, 135, 84, 0.25);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    cursor: default;
+    font-size: 1.1rem;
+    line-height: 1;
+    user-select: none;
 }
 
 /* Buttons */
@@ -94,13 +115,13 @@ a {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: linear-gradient(135deg, #0f5132 0%, #198754 100%);
     color: white;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(30, 60, 114, 0.4);
+    box-shadow: 0 5px 20px rgba(25, 135, 84, 0.45);
 }
 
 .btn-secondary {
@@ -148,6 +169,39 @@ a {
 
 .btn-logout:hover {
     background: #c82333;
+}
+
+.navbar-role-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.navbar-role-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.navbar-role-select {
+    min-width: 150px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.14);
+    color: white;
+    font-size: 0.95rem;
+}
+
+.navbar-role-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+.navbar-role-select option {
+    color: #1f2937;
 }
 
 /* Alerts */
@@ -214,7 +268,7 @@ a {
 
 /* Dashboard */
 .navbar {
-    background: rgba(0, 0, 0, 0.3);
+    background: linear-gradient(90deg, rgba(12, 79, 47, 0.97) 0%, rgba(25, 135, 84, 0.97) 100%);
     padding: 15px 30px;
     display: flex;
     justify-content: space-between;
@@ -228,8 +282,24 @@ a {
 
 .navbar-brand {
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-brand::before {
+    content: "";
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: #ffffff;
+    background-image: url("../16%20mar%202026,%2009_19_27.png");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
 }
 
 .navbar-menu {
@@ -243,6 +313,25 @@ a {
     font-size: 1rem;
 }
 
+.btn-accent {
+    background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+    color: #fff;
+}
+
+.btn-accent:hover {
+    filter: brightness(1.05);
+}
+
+.btn-info-nav {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+.btn-info-nav:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
 .container-dashboard {
     max-width: 1000px;
     margin: 100px auto 40px;
@@ -250,16 +339,22 @@ a {
 }
 
 .welcome-card {
-    background: rgba(255, 255, 255, 0.95);
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+        url("../16%20mar%202026,%2009_19_27.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     text-align: center;
     margin-bottom: 30px;
+    border: none;
 }
 
 .welcome-card h1 {
-    color: #1e3c72;
+    color: #0f5132;
     margin-bottom: 15px;
 }
 
@@ -291,16 +386,22 @@ a {
 }
 
 .admin-panel {
-    background: rgba(255, 255, 255, 0.95);
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+        url("../16%20mar%202026,%2009_19_27.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border: none;
 }
 
 .admin-panel h2 {
-    color: #1e3c72;
+    color: #0f5132;
     margin-bottom: 25px;
-    border-bottom: 2px solid #2a5298;
+    border-bottom: 2px solid #198754;
     padding-bottom: 10px;
 }
 
@@ -309,7 +410,7 @@ a {
 }
 
 .usuarios-list h3 {
-    color: #1e3c72;
+    color: #0f5132;
     margin-bottom: 15px;
 }
 
@@ -325,7 +426,7 @@ th, td {
 }
 
 th {
-    background: #1e3c72;
+    background: #145a3a;
     color: white;
 }
 
@@ -333,11 +434,36 @@ tr:hover {
     background: #f5f5f5;
 }
 
+/* Tabla de fallas */
+.fallas-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+    font-size: 16px;
+}
+
 /* Restablecer Contraseña */
 .card {
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+        url("../16%20mar%202026,%2009_19_27.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     border: none;
     border-radius: 15px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     overflow: hidden;
 }
 
