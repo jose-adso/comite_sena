@@ -10,6 +10,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(32)  # Clave secreta segura
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///usuarios.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SMTP_EMAIL'] = os.getenv('SMTP_EMAIL', '')
+app.config['SMTP_PASSWORD'] = os.getenv('SMTP_PASSWORD', '')
+app.config['SMTP_SERVER'] = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+app.config['SMTP_PORT'] = int(os.getenv('SMTP_PORT', '587'))
 
 # Importar configuración de base de datos desde models
 from models.database import db, bcrypt

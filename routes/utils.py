@@ -10,18 +10,12 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash as wz_check_password_hash
-from flask import session, flash, send_file
+from flask import session, flash, send_file, current_app
 
 from models.database import db, bcrypt
 from models.usuario import Usuario
 
 load_dotenv()
-
-# ── SMTP ──────────────────────────────────────────────────────────────────────
-SMTP_EMAIL = 'jhoset40@gmail.com'
-SMTP_PASSWORD = 'nocgkncmnwxpzbhi'
-SMTP_SERVER = 'smtp.gmail.com'
-SMTP_PORT = 587
 
 PATRONES_COMUNES = [
     'password', 'contraseña', '123456', 'qwerty', 'abc123',
@@ -34,15 +28,24 @@ ROLES_ALTERNABLES = ['admin', 'administrador', 'instructor', 'planta']
 # ── Email ─────────────────────────────────────────────────────────────────────
 def enviar_email(destinatario, asunto, cuerpo):
     try:
+        smtp_email = (current_app.config.get('SMTP_EMAIL') or os.getenv('SMTP_EMAIL', '')).strip()
+        smtp_password = (current_app.config.get('SMTP_PASSWORD') or os.getenv('SMTP_PASSWORD', '')).strip().replace(' ', '')
+        smtp_server = (current_app.config.get('SMTP_SERVER') or os.getenv('SMTP_SERVER', 'smtp.gmail.com')).strip()
+        smtp_port = int(current_app.config.get('SMTP_PORT') or os.getenv('SMTP_PORT', '587'))
+
+        if not smtp_email or not smtp_password:
+            print('Error al enviar email: faltan SMTP_EMAIL/SMTP_PASSWORD en variables de entorno')
+            return False
+
         msg = MIMEMultipart()
-        msg['From'] = SMTP_EMAIL
+        msg['From'] = smtp_email
         msg['To'] = destinatario
         msg['Subject'] = asunto
         msg.attach(MIMEText(cuerpo, 'html'))
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP(smtp_server, smtp_port)
         server.starttls()
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.sendmail(SMTP_EMAIL, destinatario, msg.as_string())
+        server.login(smtp_email, smtp_password)
+        server.sendmail(smtp_email, destinatario, msg.as_string())
         server.quit()
         return True
     except Exception as e:
