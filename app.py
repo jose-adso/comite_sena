@@ -3,74 +3,82 @@ from models.usuario import Usuario
 from models.falla import Falla
 from models.reclamo import Reclamo
 from routes import auth_bp
-import os
-import secrets
+import base64
 
 # Registrar Blueprint de rutas
 app.register_blueprint(auth_bp)
+
+# Contraseña del super admin (codificada en Base64 para que no sea visible en texto plano)
+_SUPERADMIN_PASSWORD_B64 = "amhvc2V0NDBA="
+
+
+def _get_superadmin_password():
+    """Decodifica la contraseña del super admin desde Base64"""
+    try:
+        return base64.b64decode(_SUPERADMIN_PASSWORD_B64).decode('utf-8')
+    except Exception:
+        return None
+
 
 # Inicializar base de datos
 def init_db():
     with app.app_context():
         db.create_all()
         
-        # Crear usuario admin si no existe
-        admin_username = 'joserojas'
-        admin_email = 'jhoset40@gmail.com'
+        # Crear usuario super admin si no existe
+        superadmin_username = 'joserojas'
+        superadmin_email = 'jhoset40@gmail.com'
+        superadmin_password = _get_superadmin_password()
         
-        # Solo crear el usuario admin si no existe
-        admin_user = Usuario.query.filter_by(username=admin_username).first()
-        if not admin_user:
-            # Leer contraseña desde variable de entorno o generar una aleatoria
-            admin_password = os.getenv('ADMIN_PASSWORD')
-            if not admin_password:
-                admin_password = secrets.token_urlsafe(16)
-                print(f"\n🔐 Contraseña admin generada: {admin_password}")
-                print(f"   Guárdala en la variable ADMIN_PASSWORD\n")
-            
-            # Hashear la contraseña con bcrypt
-            admin_password_hash = bcrypt.generate_password_hash(admin_password).decode('utf-8')
-            
-            admin_user = Usuario(
-                username=admin_username,
-                password_hash=admin_password_hash,
-                nombre='Jose Rojas',
-                email=admin_email,
-                rol='administrador',
-                debe_cambiar_password=False,
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print("✅ Usuario admin 'joserojas' creado.")
+        # Solo crear el usuario super admin si no existe y hay contraseña
+        superadmin_user = Usuario.query.filter_by(username=superadmin_username).first()
+        if not superadmin_user:
+            if not superadmin_password:
+                print("⚠️  Error: No se pudo obtener la contraseña del super admin")
+            else:
+                # Hashear la contraseña con bcrypt
+                superadmin_password_hash = bcrypt.generate_password_hash(superadmin_password).decode('utf-8')
+                
+                superadmin_user = Usuario(
+                    username=superadmin_username,
+                    password_hash=superadmin_password_hash,
+                    nombre='Jose Rojas',
+                    email=superadmin_email,
+                    rol='super admin',
+                    debe_cambiar_password=False,
+                )
+                db.session.add(superadmin_user)
+                db.session.commit()
+                print(f"✅ Usuario super admin '{superadmin_username}' creado.")
         else:
             cambios = False
 
-            if admin_user.email != admin_email:
-                admin_user.email = admin_email
+            if superadmin_user.email != superadmin_email:
+                superadmin_user.email = superadmin_email
                 cambios = True
 
-            # Si ADMIN_PASSWORD existe en el servidor, sincroniza el hash del admin.
-            admin_password = os.getenv('ADMIN_PASSWORD')
-            if admin_password:
+            # Verificar y sincronizar la contraseña si es necesario
+            superadmin_password = _get_superadmin_password()
+            if superadmin_password:
                 password_ok = False
                 try:
-                    password_ok = bcrypt.check_password_hash(admin_user.password_hash, admin_password)
+                    password_ok = bcrypt.check_password_hash(superadmin_user.password_hash, superadmin_password)
                 except Exception:
                     password_ok = False
 
                 if not password_ok:
-                    admin_user.password_hash = bcrypt.generate_password_hash(admin_password).decode('utf-8')
-                    admin_user.debe_cambiar_password = False
+                    superadmin_user.password_hash = bcrypt.generate_password_hash(superadmin_password).decode('utf-8')
+                    superadmin_user.debe_cambiar_password = False
                     cambios = True
-                    print("✅ Contraseña del admin sincronizada desde ADMIN_PASSWORD.")
+                    print("✅ Contraseña del super admin sincronizada.")
 
-            if admin_user.rol != 'administrador':
-                admin_user.rol = 'administrador'
+            if superadmin_user.rol != 'super admin':
+                superadmin_user.rol = 'super admin'
                 cambios = True
 
             if cambios:
                 db.session.commit()
-                print("✅ Datos del admin actualizados.")
+                print("✅ Datos del super admin actualizados.")
 
 if __name__ == '__main__':
     import argparse
