@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body class="auth-page">
+    <!-- Navbar superior -->
+    <nav class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #343a40; color: white;">
+        <div style="font-size: 1.2rem; font-weight: bold;">👥 Gestión de Usuarios</div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('usuarios.registrar_usuario') }}" class="btn btn-primary" style="text-decoration: none; padding: 8px 15px; background: #198754; color: white; border-radius: 5px;">➕ Nuevo Usuario</a>
+            <a href="{{ url_for('auth.dashboard') }}" class="btn btn-secondary" style="text-decoration: none; padding: 8px 15px; background: #6c757d; color: white; border-radius: 5px;">← Dashboard</a>
+        </div>
+    </nav>
+    
+    <div class="auth-container" style="max-width: 100%; width: 100%; padding: 20px;">
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Panel de listado de usuarios -->
+        <div class="admin-panel" style="overflow-x: auto; max-width: 100%; width: 100%; padding: 20px;">
+            <h2>👥 Lista de Usuarios</h2>
+            {% if usuarios %}
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <thead>
+                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 10px; text-align: left;">Nombre</th>
+                        <th style="padding: 10px; text-align: left;">Email</th>
+                        <th style="padding: 10px; text-align: left;">Rol</th>
+                        <th style="padding: 10px; text-align: left;">Estado</th>
+                        <th style="padding: 10px; text-align: left;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px;">{{ usuario.nombre }} {{ usuario.apellido or '' }}</td>
+                        <td style="padding: 10px;">{{ usuario.email }}</td>
+                        <td style="padding: 10px;">
+                            <span style="display: inline-block; background-color: {% if usuario.rol == 'super admin' %}#6f42c1{% elif usuario.rol == 'administrador' %}#198754{% elif usuario.rol == 'instructor' %}#0d6efd{% elif usuario.rol == 'planta' %}#fd7e14{% else %}#6c757d{% endif %}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">
+                                {{ usuario.rol }}
+                            </span>
+                        </td>
+                        <td style="padding: 10px;">
+                            {% if usuario.debe_cambiar_password %}
+                            <span style="color: #dc3545; font-size: 0.85rem;">⚠️ Pendiente</span>
+                            {% else %}
+                            <span style="color: #198754; font-size: 0.85rem;">✓ Activo</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 10px;">
+                            {% if usuario.rol != 'super admin' and usuario.id != usuario_actual_id %}
+                            <form action="{{ url_for('usuarios.eliminar_usuario', usuario_id=usuario.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar al usuario {{ usuario.nombre }}?');">
+                                <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                                    🗑️ Eliminar
+                                </button>
+                            </form>
+                            {% else %}
+                            <span style="color: #6c757d; font-size: 0.85rem;">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="text-align: center; color: #6c757d; margin-top: 15px;">No hay usuarios registrados.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

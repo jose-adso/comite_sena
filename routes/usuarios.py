@@ -1,127 +1,38 @@
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 import secrets
 from datetime import datetime, timedelta
 
 from models.database import db, bcrypt
-from models.falla import Falla
 from models.usuario import Usuario, ROLES_VALIDOS
-from routes.auth import auth_bp
-from routes.utils import es_admin, es_super_o_admin, validar_password
-from routes.utils import get_rol_activo, etiqueta_rol_visible, puede_cambiar_rol, ROLES_ALTERNABLES
+from routes.utils import es_super_o_admin, es_admin
+from routes.utils import get_rol_activo, etiqueta_rol_visible
 from routes.utils import enviar_email
 
-
-@auth_bp.route('/dashboard')
-def dashboard():
-    if 'usuario_id' not in session:
-        flash('Debe iniciar sesión primero', 'error')
-        return redirect(url_for('auth.index'))
-
-    rol_activo = get_rol_activo()
-    es_admin_usr = es_admin()
-
-    fallas_nuevas = []
-    if es_admin_usr:
-        fallas_nuevas = Falla.query.order_by(Falla.fecha_registro.desc()).limit(10).all()
-
-    return render_template(
-        'dashboard.html',
-        username=session['username'],
-        rol=rol_activo,
-        rol_visible=etiqueta_rol_visible(),
-        puede_cambiar_rol=puede_cambiar_rol(),
-        roles_alternables=ROLES_ALTERNABLES,
-        fallas_nuevas=fallas_nuevas,
-        es_admin=es_admin_usr,
-    )
+usuarios_bp = Blueprint('usuarios', __name__)
 
 
-@auth_bp.route('/vista-historial')
-def vista_historial():
-    if 'usuario_id' not in session:
-        flash('Debe iniciar sesión primero', 'error')
-        return redirect(url_for('auth.index'))
-
-    if not es_admin():
-        flash('No tiene permisos para ver esta sección', 'error')
-        return redirect(url_for('auth.dashboard'))
-
-    filter_instructor = request.args.get('filter_instructor', '').strip()
-    filter_aprendiz = request.args.get('filter_aprendiz', '').strip()
-
-    query = Falla.query
-    if filter_instructor:
-        query = query.filter(Falla.nombre_instructor.ilike(f'%{filter_instructor}%'))
-    if filter_aprendiz:
-        query = query.filter(Falla.nombre_aprendiz.ilike(f'%{filter_aprendiz}%'))
-
-    fallas = query.order_by(Falla.fecha_registro.desc()).all()
-    return render_template(
-        'historial.html',
-        username=session['username'],
-        rol=get_rol_activo(),
-        rol_visible=etiqueta_rol_visible(),
-        fallas=fallas,
-    )
-
-
-@auth_bp.route('/agregar-admin', methods=['POST'])
-def agregar_admin():
+@usuarios_bp.route('/gestionar-usuarios')
+def gestionar_usuarios():
     if 'usuario_id' not in session:
         flash('Debe iniciar sesión primero', 'error')
         return redirect(url_for('auth.index'))
 
     if not es_super_o_admin():
-        flash('No tiene permisos para agregar administradores', 'error')
+        flash('No tiene permisos para gestionar usuarios', 'error')
         return redirect(url_for('auth.dashboard'))
 
-    nombre = (request.form.get('admin_nombre') or '').strip()
-    correo = (request.form.get('admin_correo') or '').strip().lower()
-    password = request.form.get('admin_password') or ''
-
-    if not nombre or not correo or not password:
-        flash('Nombre, correo y contraseña son obligatorios', 'error')
-        return redirect(url_for('auth.dashboard'))
-
-    es_valida, mensaje = validar_password(password)
-    if not es_valida:
-        flash(mensaje, 'error')
-        return redirect(url_for('auth.dashboard'))
-
-    try:
-        existente = Usuario.query.filter_by(email=correo).first()
-        if existente:
-            flash('Ya existe un usuario con ese correo', 'error')
-            return redirect(url_for('auth.dashboard'))
-
-        username_base = correo.split('@')[0] if '@' in correo else correo
-        username_final = username_base
-        indice = 1
-        while Usuario.query.filter_by(username=username_final).first():
-            username_final = f'{username_base}_{indice}'
-            indice += 1
-
-        usuario = Usuario(
-            username=username_final,
-            password_hash=wz_generate_password_hash(password, method='scrypt'),
-            rol='administrador',
-            nombre=nombre,
-            email=correo,
-            debe_cambiar_password=True,
-        )
-        db.session.add(usuario)
-        db.session.commit()
-
-        flash('Administrador agregado exitosamente', 'success')
-    except Exception as e:
-        db.session.rollback()
-        print(f'Error agregando administrador: {e}')
-        flash('No fue posible agregar el administrador', 'error')
-
-    return redirect(url_for('auth.dashboard'))
+    usuarios = Usuario.query.order_by(Usuario.fecha_creacion.desc()).all()
+    return render_template(
+        'gestionar_usuarios.html',
+        usuarios=usuarios,
+        username=session['username'],
+        rol=get_rol_activo(),
+        rol_visible=etiqueta_rol_visible(),
+        usuario_actual_id=session.get('usuario_id'),
+    )
 
 
-@auth_bp.route('/registrar-usuario', methods=['GET', 'POST'])
+@usuarios_bp.route('/registrar-usuario', methods=['GET', 'POST'])
 def registrar_usuario():
     if 'usuario_id' not in session:
         flash('Debe iniciar sesión primero', 'error')
@@ -149,17 +60,17 @@ def registrar_usuario():
 
     if not nombre or not correo or not rol:
         flash('Nombre, correo y rol son obligatorios', 'error')
-        return redirect(url_for('auth.registrar_usuario'))
+        return redirect(url_for('usuarios.registrar_usuario'))
 
     if rol not in ROLES_VALIDOS:
         flash('Rol no válido', 'error')
-        return redirect(url_for('auth.registrar_usuario'))
+        return redirect(url_for('usuarios.registrar_usuario'))
 
     try:
         existente = Usuario.query.filter_by(email=correo).first()
         if existente:
             flash('Ya existe un usuario con ese correo', 'error')
-            return redirect(url_for('auth.registrar_usuario'))
+            return redirect(url_for('usuarios.registrar_usuario'))
 
         username_base = correo.split('@')[0] if '@' in correo else correo
         # Limitar username a 70 caracteres para dejar espacio al sufijo _1, _2, etc.
@@ -212,9 +123,47 @@ def registrar_usuario():
         else:
             flash(f'Usuario {nombre} registrado, pero no se pudo enviar el correo. El usuario deberá usar la recuperación de contraseña.', 'warning')
         
-        return redirect(url_for('auth.dashboard'))
+        return redirect(url_for('usuarios.gestionar_usuarios'))
     except Exception as e:
         db.session.rollback()
-        print(f'Error registrando usuario: {e}')
+        print(f'Error registering user: {e}')
         flash(f'No fue posible registrar el usuario. Error: {str(e)}', 'error')
-        return redirect(url_for('auth.registrar_usuario'))
+        return redirect(url_for('usuarios.registrar_usuario'))
+
+
+@usuarios_bp.route('/eliminar-usuario/<int:usuario_id>', methods=['POST'])
+def eliminar_usuario(usuario_id):
+    if 'usuario_id' not in session:
+        flash('Debe iniciar sesión primero', 'error')
+        return redirect(url_for('auth.index'))
+
+    if not es_super_o_admin():
+        flash('No tiene permisos para eliminar usuarios', 'error')
+        return redirect(url_for('auth.dashboard'))
+
+    # No permitir eliminar al propio usuario
+    if session['usuario_id'] == usuario_id:
+        flash('No puede eliminarse a sí mismo', 'error')
+        return redirect(url_for('usuarios.gestionar_usuarios'))
+
+    usuario = Usuario.query.get(usuario_id)
+    if not usuario:
+        flash('Usuario no encontrado', 'error')
+        return redirect(url_for('usuarios.gestionar_usuarios'))
+
+    # No permitir eliminar al super admin
+    if usuario.rol == 'super admin':
+        flash('No se puede eliminar el usuario super admin', 'error')
+        return redirect(url_for('usuarios.gestionar_usuarios'))
+
+    try:
+        nombre_eliminado = usuario.nombre
+        db.session.delete(usuario)
+        db.session.commit()
+        flash(f'Usuario {nombre_eliminado} eliminado exitosamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error eliminando usuario: {e}')
+        flash('No fue posible eliminar el usuario', 'error')
+
+    return redirect(url_for('usuarios.gestionar_usuarios'))

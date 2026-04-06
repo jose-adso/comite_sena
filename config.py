@@ -18,6 +18,12 @@ if not database_url:
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Configuración SMTP para enviar emails
+app.config['SMTP_EMAIL'] = 'jhoset40@gmail.com'
+app.config['SMTP_PASSWORD'] = 'lxatjwcrxzoczulv'
+app.config['SMTP_SERVER'] = 'smtp.gmail.com'
+app.config['SMTP_PORT'] = 587
+
 # Importar db y bcrypt desde models.database
 from models.database import db, bcrypt
 

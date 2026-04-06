@@ -22,7 +22,7 @@
 
         <div class="admin-panel">
             <h2>👤 Registrar Usuario</h2>
-            <form action="{{ url_for('auth.registrar_usuario') }}" method="POST" id="registroForm">
+            <form action="{{ url_for('usuarios.registrar_usuario') }}" method="POST" id="registroForm">
                 <div class="form-group">
                     <label for="nombre">Nombre *</label>
                     <input type="text" id="nombre" name="nombre" required 
@@ -52,12 +52,6 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="password">Contraseña *</label>
-                    <input type="password" id="password" name="password" required
-                           placeholder="Ingrese la contraseña">
-                    <span class="password-toggle" onmouseenter="showPassword()" onmouseleave="hidePassword()">👁️</span>
-                </div>
                 <button type="submit" class="btn btn-primary">Registrar Usuario</button>
             </form>
 
@@ -68,15 +62,5 @@
             </div>
         </div>
     </div>
-
-    <script>
-        function showPassword() {
-            document.getElementById('password').type = 'text';
-        }
-
-        function hidePassword() {
-            document.getElementById('password').type = 'password';
-        }
-    </script>
 </body>
 </html>

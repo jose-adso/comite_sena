@@ -22,7 +22,7 @@ PATRONES_COMUNES = [
     'admin', 'sena', 'usuario', '111111', 'letmein',
 ]
 BCRYPT_ROUNDS = 14
-ROLES_ALTERNABLES = ['admin', 'administrador', 'instructor', 'planta']
+ROLES_ALTERNABLES = ['super admin', 'superadmin', 'admin', 'administrador', 'instructor', 'planta']
 
 
 # ── Email ─────────────────────────────────────────────────────────────────────
@@ -103,16 +103,16 @@ def password_matches(raw_password, user_row):
 
 
 def validar_password(password):
-    if len(password) < 12:
-        return False, "La contraseña debe tener al menos 12 caracteres"
-    if len(re.findall(r'[A-Z]', password)) < 2:
-        return False, "La contraseña debe contener al menos 2 letras mayúsculas"
-    if len(re.findall(r'[a-z]', password)) < 2:
-        return False, "La contraseña debe contener al menos 2 letras minúsculas"
-    if len(re.findall(r'\d', password)) < 2:
-        return False, "La contraseña debe contener al menos 2 números"
-    if len(re.findall(r'[!@#$%^&*(),.?\":{}|<>_~\-]', password)) < 2:
-        return False, "La contraseña debe contener al menos 2 caracteres especiales (!@#$%^&*(),.?\":{}|<>_-)"
+    if len(password) < 8:
+        return False, "La contraseña debe tener al menos 8 caracteres"
+    if len(re.findall(r'[A-Z]', password)) < 1:
+        return False, "La contraseña debe contener al menos 1 letra mayúscula"
+    if len(re.findall(r'[a-z]', password)) < 1:
+        return False, "La contraseña debe contener al menos 1 letra minúscula"
+    if len(re.findall(r'\d', password)) < 1:
+        return False, "La contraseña debe contener al menos 1 número"
+    if len(re.findall(r'[!@#$%^&*(),.?\":{}|<>_~\-]', password)) < 1:
+        return False, "La contraseña debe contener al menos 1 carácter especial (!@#$%^&*(),.?\":{}|<>_~-)"
     if re.search(r'(.)\1{2,}', password):
         return False, "La contraseña no puede tener 3 o más caracteres iguales consecutivos"
     password_lower = password.lower()
@@ -133,11 +133,11 @@ def password_ya_usada(usuario, nueva_password):
 
 # ── Roles / sesión ────────────────────────────────────────────────────────────
 def es_admin():
-    return get_rol_activo() in ['admin', 'administrador', 'planta']
+    return get_rol_activo() in ['admin', 'administrador', 'planta', 'super admin', 'superadmin']
 
 
 def es_super_o_admin():
-    return get_rol_activo() in ['admin', 'administrador']
+    return get_rol_activo() in ['admin', 'administrador', 'super admin', 'superadmin']
 
 
 def es_docente():
@@ -146,13 +146,13 @@ def es_docente():
 
 def get_rol_activo():
     rol_real = (session.get('rol') or '').strip().lower()
-    if rol_real == 'admin':
+    if rol_real in ['admin', 'super admin']:
         return (session.get('rol_activo') or rol_real).strip().lower()
     return rol_real
 
 
 def puede_cambiar_rol():
-    return (session.get('rol') or '').strip().lower() == 'admin'
+    return (session.get('rol') or '').strip().lower() in ['admin', 'super admin']
 
 
 
@@ -167,7 +167,7 @@ def etiqueta_rol_visible():
 
 def normalizar_rol_externo(usuario_row):
     rol = (usuario_row.get('rol') or usuario_row.get('role') or '').strip().lower()
-    if rol in ['admin', 'administrador', 'planta', 'instructor']:
+    if rol in ['super admin', 'admin', 'administrador', 'planta', 'instructor']:
         return rol
     return 'instructor'
 

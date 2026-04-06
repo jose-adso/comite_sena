@@ -13,18 +13,18 @@
     <nav class="navbar">
         <div class="navbar-brand">Sistema Macro Sena</div>
         <div class="navbar-menu">
-            {% if rol == 'admin' %}
+            {% if rol == 'super admin' or rol == 'admin' %}
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
             <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
             <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
-            <a href="{{ url_for('auth.registrar_usuario') }}" class="btn-nav btn-info-nav">👤 Registrar Usuario</a>
+            <a href="{{ url_for('usuarios.gestionar_usuarios') }}" class="btn-nav btn-info-nav">👥 Gestionar Usuarios</a>
             {% elif rol == 'administrador' %}
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
             <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
             <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
-            <a href="{{ url_for('auth.registrar_usuario') }}" class="btn-nav btn-info-nav">👤 Registrar Usuario</a>
+            <a href="{{ url_for('usuarios.registrar_usuario') }}" class="btn-nav btn-info-nav">👤 Registrar Usuario</a>
             {% elif rol == 'planta' %}
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
@@ -61,7 +61,7 @@
             {% endif %}
         {% endwith %}
 
-        {% if rol == 'admin' %}
+        {% if rol == 'super admin' or rol == 'admin' %}
         <div class="admin-panel" style="margin-bottom: 20px;">
             <h2>➕ Agregar Administrador</h2>
             <form action="{{ url_for('auth.agregar_admin') }}" method="POST">
