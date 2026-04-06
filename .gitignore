@@ -1,6 +1,5 @@
-# Secretos y entorno - NUNCA subir al repositorio
-.env
-*.env
+# Secretos y entorno
+# `.env` ya no se ignora para permitir versionar la información del super admin.
 
 # Python
 __pycache__/
