@@ -100,7 +100,7 @@ def registrar_falla():
             db.session.commit()
         session['usuario_id'] = usuario_local.id
 
-    from app import app as flask_app
+    from flask import current_app
 
     # Manejar evidencias (múltiples archivos)
     evidencias = request.files.getlist('evidencia')
@@ -108,7 +108,7 @@ def registrar_falla():
     evidencia_ruta = ''
 
     if evidencias and evidencias[0].filename:
-        upload_folder = os.path.join(flask_app.root_path, 'static', 'evidencias')
+        upload_folder = os.path.join(current_app.root_path, 'static', 'evidencias')
         os.makedirs(upload_folder, exist_ok=True)
         for evidencia in evidencias:
             if evidencia and evidencia.filename:
@@ -122,7 +122,7 @@ def registrar_falla():
     firma = request.files.get('firma')
     firma_ruta = ''
     if firma and firma.filename:
-        upload_folder = os.path.join(flask_app.root_path, 'static', 'firmas')
+        upload_folder = os.path.join(current_app.root_path, 'static', 'firmas')
         os.makedirs(upload_folder, exist_ok=True)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"firma_{timestamp}_{firma.filename}"

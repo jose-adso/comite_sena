@@ -83,16 +83,17 @@ def registrar_reclamo():
         flash('Fecha del incidente inválida', 'error')
         return redirect(url_for('auth.vista_reclamo'))
 
+    from flask import current_app
+
     # Guardar evidencia adjunta
     evidencia_ruta = None
     evidencia = request.files.get('evidencia')
     if evidencia and evidencia.filename:
-        from app import app as flask_app
         ext = os.path.splitext(evidencia.filename)[1].lower()
         if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.pdf']:
             flash('Formato de evidencia no permitido (JPG, PNG, WEBP, PDF)', 'error')
             return redirect(url_for('auth.vista_reclamo'))
-        upload_folder = os.path.join(flask_app.root_path, 'static', 'evidencias')
+        upload_folder = os.path.join(current_app.root_path, 'static', 'evidencias')
         os.makedirs(upload_folder, exist_ok=True)
         filename = f"reclamo_{uuid.uuid4().hex}{ext}"
         evidencia.save(os.path.join(upload_folder, filename))
