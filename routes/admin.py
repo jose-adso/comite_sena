@@ -6,8 +6,8 @@ from models.database import db, bcrypt
 from models.falla import Falla
 from models.usuario import Usuario, ROLES_VALIDOS
 from routes.auth import auth_bp
-from routes.utils import es_admin, es_super_o_admin, validar_password
-from routes.utils import get_rol_activo, etiqueta_rol_visible, puede_cambiar_rol, ROLES_ALTERNABLES
+from routes.utils import es_admin, es_super_o_admin, validar_password, password_matches
+from routes.utils import get_rol_activo, etiqueta_rol_visible, puede_cambiar_rol, roles_disponibles_para_usuario
 from routes.utils import enviar_email
 
 
@@ -30,7 +30,7 @@ def dashboard():
         rol=rol_activo,
         rol_visible=etiqueta_rol_visible(),
         puede_cambiar_rol=puede_cambiar_rol(),
-        roles_alternables=ROLES_ALTERNABLES,
+        roles_alternables=roles_disponibles_para_usuario(),
         fallas_nuevas=fallas_nuevas,
         es_admin=es_admin_usr,
     )
@@ -103,7 +103,7 @@ def agregar_admin():
 
         usuario = Usuario(
             username=username_final,
-            password_hash=wz_generate_password_hash(password, method='scrypt'),
+            password_hash=bcrypt.generate_password_hash(password).decode('utf-8'),
             rol='administrador',
             nombre=nombre,
             email=correo,

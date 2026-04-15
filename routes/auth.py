@@ -8,7 +8,7 @@ from routes.utils import (
     normalizar_rol_externo,
     es_admin,
     puede_cambiar_rol,
-    ROLES_ALTERNABLES,
+    roles_disponibles_para_usuario,
 )
 
 auth_bp = Blueprint('auth', __name__)
@@ -78,8 +78,9 @@ def cambiar_rol():
         flash('No tiene permisos para cambiar de rol', 'error')
         return redirect(url_for('auth.dashboard'))
     nuevo_rol = (request.form.get('rol_activo') or '').strip().lower()
-    if nuevo_rol not in ROLES_ALTERNABLES:
-        flash('Rol no válido', 'error')
+    roles_permitidos = roles_disponibles_para_usuario()
+    if nuevo_rol not in roles_permitidos:
+        flash('Rol no válido para su usuario', 'error')
         return redirect(url_for('auth.dashboard'))
     session['rol_activo'] = nuevo_rol
     flash(f'Rol cambiado a {nuevo_rol.capitalize()}', 'success')

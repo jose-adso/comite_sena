@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import secrets
 import smtplib
 import textwrap
@@ -22,7 +23,19 @@ PATRONES_COMUNES = [
     'admin', 'sena', 'usuario', '111111', 'letmein',
 ]
 BCRYPT_ROUNDS = 14
-ROLES_ALTERNABLES = ['super admin', 'superadmin', 'admin', 'administrador', 'instructor', 'planta']
+ROLES_ALTERNABLES = ['super admin', 'administrador', 'instructor', 'planta']
+
+
+def roles_disponibles_para_usuario():
+    rol_real = (session.get('rol_real') or session.get('rol') or '').strip().lower()
+
+    if rol_real == 'super admin' or rol_real.startswith('super'):
+        return ['super admin', 'administrador', 'instructor', 'planta']
+    if rol_real == 'administrador':
+        return ['administrador', 'instructor', 'planta']
+    if rol_real in ROLES_ALTERNABLES:
+        return [rol_real]
+    return ['instructor']
 
 
 # ── Email ─────────────────────────────────────────────────────────────────────
@@ -133,11 +146,11 @@ def password_ya_usada(usuario, nueva_password):
 
 # ── Roles / sesión ────────────────────────────────────────────────────────────
 def es_admin():
-    return get_rol_activo() in ['admin', 'administrador', 'planta', 'super admin', 'superadmin']
+    return get_rol_activo() in ['administrador', 'planta', 'super admin']
 
 
 def es_super_o_admin():
-    return get_rol_activo() in ['admin', 'administrador', 'super admin', 'superadmin']
+    return get_rol_activo() in ['administrador', 'super admin']
 
 
 def es_docente():
@@ -145,14 +158,14 @@ def es_docente():
 
 
 def get_rol_activo():
-    rol_real = (session.get('rol') or '').strip().lower()
-    if rol_real in ['admin', 'super admin']:
-        return (session.get('rol_activo') or rol_real).strip().lower()
-    return rol_real
+    rol_activo = session.get('rol_activo')
+    if rol_activo:
+        return rol_activo.strip().lower()
+    return session.get('rol_real') or session.get('rol') or 'instructor'
 
 
 def puede_cambiar_rol():
-    return (session.get('rol') or '').strip().lower() in ['admin', 'super admin']
+    return len(roles_disponibles_para_usuario()) > 1
 
 
 
@@ -167,7 +180,7 @@ def etiqueta_rol_visible():
 
 def normalizar_rol_externo(usuario_row):
     rol = (usuario_row.get('rol') or usuario_row.get('role') or '').strip().lower()
-    if rol in ['super admin', 'admin', 'administrador', 'planta', 'instructor']:
+    if rol in ['super admin', 'administrador', 'planta', 'instructor']:
         return rol
     return 'instructor'
 
@@ -218,7 +231,84 @@ def _crear_pdf_respaldo_desde_doc(doc, pdf_path, titulo='Documento generado'):
     c.save()
 
 
+def _archivo_generado_valido(path_archivo):
+    try:
+        return os.path.exists(path_archivo) and os.path.getsize(path_archivo) > 0
+    except OSError:
+        return False
+
+
+def _convertir_con_docx2pdf(temp_docx, temp_pdf, timeout=60):
+    """Convertir DOCX a PDF usando docx2pdf en un subproceso con timeout."""
+    import traceback
+    if not os.path.exists(temp_docx):
+        return False, f'El archivo DOCX no existe: {temp_docx}'
+
+    docx_size = os.path.getsize(temp_docx)
+    print(f'[PDF] docx2pdf: convirtiendo {temp_docx} ({docx_size} bytes) -> {temp_pdf}')
+
+    script = (
+        "import os\n"
+        "import sys\n"
+        "from docx2pdf import convert\n"
+        f"temp_docx = r\"{temp_docx}\"\n"
+        f"temp_pdf = r\"{temp_pdf}\"\n"
+        "try:\n"
+        "    convert(temp_docx, temp_pdf)\n"
+        "    print('CONVERSION_DONE', file=sys.stderr)\n"
+        "except Exception as e:\n"
+        "    print(f'ERROR: {e}', file=sys.stderr)\n"
+        "    if not (os.path.exists(temp_pdf) and os.path.getsize(temp_pdf) > 0):\n"
+        "        raise\n"
+    )
+
+    try:
+        if os.path.exists(temp_pdf):
+            os.remove(temp_pdf)
+
+        run_kwargs = {
+            'capture_output': True,
+            'text': True,
+            'timeout': timeout,
+            'check': False,
+        }
+        if os.name == 'nt' and hasattr(subprocess, 'CREATE_NO_WINDOW'):
+            run_kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+
+        result = subprocess.run([sys.executable, '-c', script], **run_kwargs)
+        
+        if result.stdout:
+            print(f'[PDF] docx2pdf stdout: {result.stdout[:500]}')
+        if result.stderr:
+            print(f'[PDF] docx2pdf stderr: {result.stderr[:1000]}')
+            
+    except subprocess.TimeoutExpired:
+        print(f'[PDF] docx2pdf timeout después de {timeout}s')
+        if _archivo_generado_valido(temp_pdf):
+            return True, f'docx2pdf tardó más de {timeout}s, pero el PDF sí fue generado.'
+        return False, f'docx2pdf excedió el tiempo límite de {timeout}s.'
+    except Exception as e:
+        print(f'[PDF] docx2pdf exception: {e}')
+        traceback.print_exc()
+        if _archivo_generado_valido(temp_pdf):
+            return True, f'PDF generado con advertencia: {str(e)}'
+        return False, f'Error al convertir: {str(e)}'
+
+    if _archivo_generado_valido(temp_pdf):
+        print(f'[PDF] docx2pdf exitoso: {os.path.getsize(temp_pdf)} bytes')
+        detalle = (result.stderr or result.stdout or '').strip()
+        return True, detalle or None
+
+    print(f'[PDF] docx2pdf falló - PDF no generado. returncode={result.returncode}')
+    if result.returncode != 0:
+        detalle = (result.stderr or result.stdout or '').strip()
+        return False, detalle or f'docx2pdf retornó código {result.returncode}'
+
+    return False, 'docx2pdf no generó el archivo PDF'
+
+
 def _convertir_con_libreoffice(temp_docx, temp_pdf):
+    print(f'[PDF] LibreOffice: convirtiendo {temp_docx} -> {temp_pdf}')
     soffice_cmd = shutil.which('soffice') or shutil.which('libreoffice')
     if not soffice_cmd:
         return False, 'LibreOffice no esta disponible en el sistema.'
@@ -235,10 +325,13 @@ def _convertir_con_libreoffice(temp_docx, temp_pdf):
             capture_output=True, text=True, timeout=60, check=False,
         )
     except Exception as e:
+        print(f'[PDF] LibreOffice exception: {e}')
         return False, str(e)
 
+    print(f'[PDF] LibreOffice returncode: {result.returncode}')
     if result.returncode != 0:
         detalle = (result.stderr or result.stdout or '').strip()
+        print(f'[PDF] LibreOffice error: {detalle}')
         return False, detalle or f'LibreOffice retorno codigo {result.returncode}'
 
     if not os.path.exists(pdf_generado_path) or os.path.getsize(pdf_generado_path) == 0:
@@ -247,74 +340,87 @@ def _convertir_con_libreoffice(temp_docx, temp_pdf):
     if os.path.abspath(pdf_generado_path) != os.path.abspath(temp_pdf):
         os.replace(pdf_generado_path, temp_pdf)
 
+    print(f'[PDF] LibreOffice exitoso: {os.path.getsize(temp_pdf)} bytes')
     return True, None
 
 
 def _replace_in_paragraph(paragraph, replacements):
     if not paragraph.runs:
         return
-    for run in paragraph.runs:
-        texto_original = run.text
-        texto_actualizado = texto_original
-        for placeholder, value in replacements.items():
-            texto_actualizado = texto_actualizado.replace(placeholder, str(value))
-        if texto_actualizado != texto_original:
-            run.text = texto_actualizado
 
-    texto_post_runs = ''.join(run.text for run in paragraph.runs)
-    texto_fallback = texto_post_runs
     for placeholder, value in replacements.items():
-        texto_fallback = texto_fallback.replace(placeholder, str(value))
-
-    if texto_fallback != texto_post_runs:
+        replacement = '' if value is None else str(value)
+        
         for run in paragraph.runs:
-            run.text = ''
-        paragraph.runs[0].text = texto_fallback
+            if run.text and placeholder in run.text:
+                run.text = run.text.replace(placeholder, replacement)
+
+
+def _replace_placeholders_in_container(container, replacements):
+    for paragraph in getattr(container, 'paragraphs', []):
+        _replace_in_paragraph(paragraph, replacements)
+
+    for table in getattr(container, 'tables', []):
+        for row in table.rows:
+            for cell in row.cells:
+                _replace_placeholders_in_container(cell, replacements)
 
 
 def _replace_placeholders_doc(doc, replacements):
-    for paragraph in doc.paragraphs:
-        _replace_in_paragraph(paragraph, replacements)
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    _replace_in_paragraph(paragraph, replacements)
+    _replace_placeholders_in_container(doc, replacements)
+
+    for section in getattr(doc, 'sections', []):
+        _replace_placeholders_in_container(section.header, replacements)
+        _replace_placeholders_in_container(section.footer, replacements)
 
 
 def _enviar_pdf_siempre(temp_docx, temp_pdf, download_name, doc_para_respaldo, titulo_respaldo):
-    conversion_error = None
-    for _ in range(3):
-        try:
-            from docx2pdf import convert
-            convert(temp_docx, temp_pdf)
-            if os.path.exists(temp_pdf) and os.path.getsize(temp_pdf) > 0:
-                return send_file(
-                    temp_pdf, as_attachment=True,
-                    download_name=download_name, mimetype='application/pdf',
-                )
-        except Exception as e:
-            conversion_error = e
-
-    ok_libreoffice, detalle_libreoffice = _convertir_con_libreoffice(temp_docx, temp_pdf)
-    if ok_libreoffice:
+    print(f'[PDF] ===== INICIANDO _enviar_pdf_siempre =====')
+    print(f'[PDF] download_name: {download_name}')
+    print(f'[PDF] temp_docx: {temp_docx}, existe: {os.path.exists(temp_docx)}')
+    print(f'[PDF] temp_pdf: {temp_pdf}')
+    
+    ok_docx2pdf, detalle_docx2pdf = _convertir_con_docx2pdf(temp_docx, temp_pdf)
+    print(f'[PDF] docx2pdf result: ok={ok_docx2pdf}, detalle={detalle_docx2pdf}')
+    if ok_docx2pdf:
+        print(f'[PDF] Enviando PDF via docx2pdf')
         return send_file(
             temp_pdf, as_attachment=True,
             download_name=download_name, mimetype='application/pdf',
         )
 
-    # Intentar crear PDF de respaldo como última opción
+    print(f'⚠️ docx2pdf no disponible para {download_name}: {detalle_docx2pdf}')
+
+    ok_libreoffice, detalle_libreoffice = _convertir_con_libreoffice(temp_docx, temp_pdf)
+    print(f'[PDF] LibreOffice result: ok={ok_libreoffice}, detalle={detalle_libreoffice}')
+    if ok_libreoffice:
+        print(f'[PDF] Enviando PDF via LibreOffice')
+        return send_file(
+            temp_pdf, as_attachment=True,
+            download_name=download_name, mimetype='application/pdf',
+        )
+
+    print(f'⚠️ LibreOffice no disponible para {download_name}: {detalle_libreoffice}')
+
+    # Si la conversión real a PDF falla, entregar el DOCX para conservar el formato.
     try:
-        _crear_pdf_respaldo_desde_doc(doc_para_respaldo, temp_pdf, titulo_respaldo)
-        if os.path.exists(temp_pdf) and os.path.getsize(temp_pdf) > 0:
-            return send_file(
-                temp_pdf, as_attachment=True,
-                download_name=download_name, mimetype='application/pdf',
-            )
-    except Exception as respaldo_error:
+        flash(
+            'No fue posible convertir a PDF en este entorno. Se descargará el archivo Word para conservar el formato original.',
+            'warning',
+        )
+    except Exception:
         pass
-    
-    # Si todo falla, mostrar error en lugar de enviar DOCX
+
+    nombre_docx = f"{os.path.splitext(download_name)[0]}.docx"
+    if os.path.exists(temp_docx) and os.path.getsize(temp_docx) > 0:
+        print(f'[PDF] Entregando DOCX como fallback')
+        return send_file(
+            temp_docx,
+            as_attachment=True,
+            download_name=nombre_docx,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        )
+
     raise RuntimeError(
-        f'No fue posible convertir a PDF. docx2pdf error: {conversion_error}. LibreOffice: {ok_libreoffice}'
+        f'No fue posible convertir a PDF. docx2pdf: {detalle_docx2pdf}. LibreOffice: {detalle_libreoffice}'
     )

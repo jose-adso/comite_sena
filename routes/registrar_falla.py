@@ -14,6 +14,7 @@ from routes.utils import (
     es_admin,
     _username_seguro,
     BCRYPT_ROUNDS,
+    _replace_in_paragraph,
     _replace_placeholders_doc,
     _enviar_pdf_siempre,
     etiqueta_rol_visible,
@@ -159,16 +160,31 @@ def registrar_falla():
 @auth_bp.route('/generar-formato/<int:falla_id>')
 def generar_formato(falla_id):
     """Generar formato PDF de comité para una falla"""
-    if 'usuario_id' not in session:
+    print(f'[PDF] Iniciar generar_formato falla_id={falla_id}')
+    print(f'[PDF] Session keys: {list(session.keys())}')
+    if 'usuario_id' not in session and 'username' not in session:
         flash('Debe iniciar sesión primero', 'error')
         return redirect(url_for('auth.index'))
+    
+    rol = session.get('rol', session.get('rol_real', '')).lower()
+    print(f'[PDF] Rol del usuario: {rol}')
+    if rol not in ['super admin', 'administrador']:
+        print(f'[PDF] Acceso denegado para rol: {rol}')
+        flash('No tiene permisos para generar PDFs', 'error')
+        return redirect(url_for('auth.dashboard'))
 
     falla = Falla.query.get_or_404(falla_id)
+    print(f'[PDF] Generando PDF para falla: {falla_id}')
 
     try:
+        print('[PDF] Cargando plantilla...')
         template_path = os.path.join(os.path.dirname(__file__), '..', 'templates', 'FORMATO COMITE.docx')
+        print(f'[PDF] Template path: {template_path}')
+        print(f'[PDF] Template exists: {os.path.exists(template_path)}')
         doc = Document(template_path)
+        print('[PDF] Plantilla cargada')
 
+        print('[PDF] Haciendo reemplazos...')
         replacements = {
             '[FECHA]': formatear_fecha_larga(falla.fecha_falta) if falla.fecha_falta else '',
             '[NOMBRE INSTRUCTOR]': falla.nombre_instructor,
@@ -176,47 +192,115 @@ def generar_formato(falla_id):
             '[NOMBRE FICHA]': falla.nombre_ficha or '',
             '[NUMERO FICHA]': falla.numero_ficha or '',
             '[NOMBRE APRENDIZ]': falla.nombre_aprendiz,
-            '[CEDULA APREDIZ]': falla.documento_aprendiz,
-            '[CORREO APRENDIZ]': falla.correo_aprendiz,
-            '[TELEFONO APRENDIZ]': falla.telefono_aprendiz,
-            'Descripción de Faltas': 'Descripción de Faltas: ' + falla.descripcion_faltas,
+            '[CEDULA APREDIZ]': falla.documento_aprendiz or '',
+            '[CORREO APRENDIZ]': falla.correo_aprendiz or '',
+            '[TELEFONO APREDIZ]': falla.telefono_aprendiz or '',
+            '[TELEFONO APRENDIZ]': falla.telefono_aprendiz or '',
+            'Descripcion de Faltas': 'Descripcion de Faltas: ' + (falla.descripcion_faltas or ''),
+            'Descripción de Faltas': 'Descripción de Faltas: ' + (falla.descripcion_faltas or ''),
+            'Evidencia Fotografica': 'Evidencia Fotografica',
             'Evidencia Fotográfica': 'Evidencia Fotográfica',
             'Quien presenta la queja y/o informe por la firma': 'Quien presenta la queja y/o informe por la firma',
+            'Firma del Instructor': 'Firma del Instructor',
+            '[firma]': 'Firma del Instructor',
         }
-        _replace_placeholders_doc(doc, replacements)
+        print('[PDF] Ejecutando _replace_placeholders_doc...')
+        import threading
+        import time
+        
+        result = [None]
+        error = [None]
+        
+        def do_replace():
+            try:
+                _replace_placeholders_doc(doc, replacements)
+                result[0] = 'done'
+            except Exception as e:
+                error[0] = str(e)
+        
+        thread = threading.Thread(target=do_replace)
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout=15)
+        
+        if thread.is_alive():
+            print('[PDF] _replace_placeholders_doc timeout!')
+            flash('Error: timeout al generar PDF', 'error')
+            return redirect(url_for('auth.vista_historial'))
+        elif error[0]:
+            print(f'[PDF] Error en replace: {error[0]}')
+            flash(f'Error al generar PDF: {error[0]}', 'error')
+            return redirect(url_for('auth.vista_historial'))
+        
+        print('[PDF] Reemplazos hechos')
 
-        # Agregar evidencias fotográficas
+        # Agregar evidencias fotográficas sin sobrescribir el texto del párrafo
+        print(f'[PDF] evidencia: {falla.evidencia}')
         if falla.evidencia:
             evidencia_paths = falla.evidencia.split(',')
+            print(f'[PDF] evidencia_paths: {evidencia_paths}')
             for paragraph in doc.paragraphs:
-                if 'Evidencia Fotográfica' in paragraph.text:
-                    paragraph.text = paragraph.text.replace('Evidencia Fotográfica', '')
+                text = paragraph.text
+                if 'Evidencia Fotográfica' in text or 'Evidencia Fotografica' in text:
+                    print(f'[PDF] Encontrado párrafo Evidencia: "{text[:50]}"')
+                    _replace_in_paragraph(paragraph, {'Evidencia Fotográfica': '', 'Evidencia Fotografica': ''})
+                    for ev_path in evidencia_paths:
+                        if ev_path.strip():
+                            full_path = os.path.join(os.path.dirname(__file__), '..', 'static', ev_path.strip())
+                            print(f'[PDF] evapor full_path: {full_path}')
+                            print(f'[PDF] evapor existe: {os.path.exists(full_path)}')
+                            if os.path.exists(full_path):
+                                try:
+                                    paragraph.add_run().add_break()
+                                    run = paragraph.add_run()
+                                    run.add_picture(full_path, width=Inches(4.0))
+                                    paragraph.add_run().add_break()
+                                    paragraph.add_run().add_break()
+                                except Exception:
+                                    paragraph.add_run(f"[Evidencia: {os.path.basename(full_path)}]\n\n")
+                    break
                     for ev_path in evidencia_paths:
                         if ev_path.strip():
                             full_path = os.path.join(os.path.dirname(__file__), '..', 'static', ev_path.strip())
                             if os.path.exists(full_path):
                                 try:
-                                    # Agregar cada imagen en un nuevo run para que se muestre
+                                    paragraph.add_run().add_break()
                                     run = paragraph.add_run()
                                     run.add_picture(full_path, width=Inches(4.0))
-                                    # Agregar salto de línea y espacio después de cada imagen
-                                    paragraph.add_run('\n\n')
-                                except Exception as e:
+                                    paragraph.add_run().add_break()
+                                    paragraph.add_run().add_break()
+                                except Exception:
                                     paragraph.add_run(f"[Evidencia: {os.path.basename(full_path)}]\n\n")
                     break
 
-        # Agregar firma
+        # Agregar firma preservando el formato del párrafo
+        print(f'[PDF] firma: {falla.firma}')
         if falla.firma:
             full_path = os.path.join(os.path.dirname(__file__), '..', 'static', falla.firma.strip())
+            print(f'[PDF] firma full_path: {full_path}')
+            print(f'[PDF] firma existe: {os.path.exists(full_path)}')
             if os.path.exists(full_path):
                 for paragraph in doc.paragraphs:
-                    if 'Quien presenta la queja y/o informe por la firma' in paragraph.text:
-                        paragraph.text = paragraph.text.replace('Quien presenta la queja y/o informe por la firma', '')
-                        run = paragraph.add_run()
+                    text = paragraph.text
+                    if 'Quien presenta la queja y/o informe por la firma' in text:
+                        print(f'[PDF] Encontrado firma: "{text[:50]}"')
+                        _replace_in_paragraph(paragraph, {'Quien presenta la queja y/o informe por la firma': ''})
                         try:
+                            paragraph.add_run().add_break()
+                            run = paragraph.add_run()
                             run.add_picture(full_path, width=Inches(2.0))
                         except Exception:
-                            paragraph.text = f"[Firma: {os.path.basename(full_path)}]"
+                            paragraph.add_run(f"[Firma: {os.path.basename(full_path)}]")
+                        break
+                    elif 'Firma del Instructor' in text or '[firma]' in text:
+                        print(f'[PDF] Encontrado Firma del Instructor: "{text[:50]}"')
+                        _replace_in_paragraph(paragraph, {'Firma del Instructor': '', '[firma]': ''})
+                        try:
+                            paragraph.add_run().add_break()
+                            run = paragraph.add_run()
+                            run.add_picture(full_path, width=Inches(2.0))
+                        except Exception:
+                            paragraph.add_run(f"[Firma: {os.path.basename(full_path)}]")
                         break
 
         import tempfile
@@ -225,6 +309,8 @@ def generar_formato(falla_id):
         temp_docx = os.path.join(temp_dir, f'formato_comite_{falla_id}_{uuid.uuid4().hex}.docx')
         temp_pdf = os.path.join(temp_dir, f'formato_comite_{falla_id}_{uuid.uuid4().hex}.pdf')
         doc.save(temp_docx)
+        
+        print(f'[PDF] DOCX guardado, intentando convertir a PDF...')
 
         return _enviar_pdf_siempre(
             temp_docx=temp_docx,
@@ -234,5 +320,7 @@ def generar_formato(falla_id):
             titulo_respaldo='Formato comite generado',
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         flash(f'Error al generar el formato: {str(e)}', 'error')
         return redirect(url_for('auth.vista_historial'))
