@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grabar ReuniÃ³n - Sistema Macro Sena</title>
+    <title>Grabar Reunión - Sistema Macro Sena</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
@@ -12,9 +12,9 @@
     <nav class="navbar">
         <a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
         <div class="navbar-menu">
-            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">â† Volver al Dashboard</a>
-            <span class="navbar-user">ðŸ‘¤ {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
-            <a href="/logout" class="btn-nav btn-logout">Cerrar SesiÃ³n</a>
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">← Volver al Dashboard</a>
+            <span class="navbar-user">👤 {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
+            <a href="/logout" class="btn-nav btn-logout">Cerrar Sesión</a>
         </div>
     </nav>
 
@@ -30,16 +30,16 @@
         {% endwith %}
 
         <div class="admin-panel show">
-            <h2>ðŸŽ™ï¸ Grabar ReuniÃ³n</h2>
+            <h2>🎙️ Grabar Reunión</h2>
             <p style="margin-bottom: 20px; color: #4b5563;">
-                Use esta herramienta para grabar audio de reuniones. Luego podrÃ¡ transcribir y generar un PDF.
+                 Use esta herramienta para grabar audio de reuniones. Luego podrá transcribir y generar un PDF.
             </p>
 
             <div class="form-group">
-                <label for="titulo_reunion">TÃ­tulo de la ReuniÃ³n</label>
+                <label for="titulo_reunion">Título de la Reunión</label>
                 <input type="text" id="titulo_reunion" name="titulo_reunion" required 
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                       placeholder="Ej: ComitÃ© de EvaluaciÃ³n - Abril 2026">
+                        placeholder="Ej: Comité de Evaluación - Abril 2026">
             </div>
 
             <div class="form-group">
@@ -53,7 +53,7 @@
             </div>
 
             <div class="form-group">
-                <label for="fecha_reunion">Fecha de la ReuniÃ³n</label>
+                <label for="fecha_reunion">Fecha de la Reunión</label>
                 <input type="date" id="fecha_reunion" name="fecha_reunion" required 
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg"
                        value="{{ today_date }}">
@@ -61,12 +61,12 @@
 
             <div style="text-align: center; margin: 30px 0; padding: 30px; background: #f9fafb; border-radius: 8px;">
                 <div style="font-size: 0.9em; margin-bottom: 10px; color: #dc2626;">
-                   âš ï¸ Navegadores: Chrome, Edge, Firefox, Brave<br>
-                   âš ï¸ TranscripciÃ³n: <strong>Offline con Whisper</strong> (sin Internet)
+                   ⚠️ Navegadores: Chrome, Edge, Firefox, Brave<br>
+                   ⚠️ Transcripción: <strong>Offline con Whisper</strong> (sin Internet)
                 </div>
                 <div id="mic-test-container" style="margin-bottom: 15px;">
                     <span id="mic-test-status" style="font-size: 0.9em; color: #059669;">
-                        <i class="fas fa-microphone"></i> MicrÃ³fono listo
+                         <i class="fas fa-microphone"></i> Micrófono listo
                     </span>
                 </div>
                 <div id="recording-status" style="font-size: 1.2em; margin-bottom: 20px; color: #6b7280;">
@@ -75,12 +75,12 @@
                 
                 <button id="btn-grabar" onclick="iniciarGrabacion()" 
                         class="btn btn-primary" style="padding: 15px 30px; font-size: 1.2em;">
-                    <i class="fas fa-microphone"></i> Iniciar GrabaciÃ³n
+                     <i class="fas fa-microphone"></i> Iniciar Grabación
                 </button>
                 
                 <button id="btn-parar" onclick="detenerGrabacion()" 
                         class="btn btn-danger" style="padding: 15px 30px; font-size: 1.2em; display: none;">
-                    <i class="fas fa-stop"></i> Detener GrabaciÃ³n
+                    <i class="fas fa-stop"></i> Detener Grabación
                 </button>
                 
                 <div id="timer" style="font-size: 2em; margin-top: 20px; color: #dc2626; display: none;">
@@ -97,21 +97,21 @@
                     </h4>
                     <textarea id="transcripcion-live"
                               style="width: 100%; height: 150px; padding: 10px; border: 2px solid #22c55e; border-radius: 8px; background: #f0fdf4; font-size: 1em; resize: vertical;"
-                              placeholder="La transcripciÃ³n aparecerÃ¡ aquÃ­ mientras hablas..."></textarea>
+                               placeholder="La transcripción aparecerá aquí mientras hablas..."></textarea>
                     <div style="margin-top: 8px;">
                         <button type="button" onclick="habilitarModoManual()"
                                 style="padding: 4px 12px; font-size: 0.85em; background: #374151; color: white; border: none; border-radius: 4px; cursor: pointer;">
                             <i class="fas fa-keyboard"></i> Modo Manual
                         </button>
                         <span style="font-size: 0.8em; color: #6b7280; margin-left: 10px;">
-                            TambiÃ©n se procesarÃ¡ con Whisper al finalizar la grabaciÃ³n
+                             También se procesará con Whisper al finalizar la grabación
                         </span>
                     </div>
                 </div>
                 <div id="manual-container" style="margin-top: 20px; display: none; text-align: left;">
                     <textarea id="transcripcion-manual"
                               style="width: 100%; height: 150px; padding: 10px; border: 2px solid #22c55e; border-radius: 8px; background: #f0fdf4; font-size: 1em; resize: vertical;"
-                              placeholder="Escribe la transcripciÃ³n manualmente..."></textarea>
+                               placeholder="Escribe la transcripción manualmente..."></textarea>
                 </div>
 
                 <!-- Visualizador de audio (ecualizador) -->
@@ -131,9 +131,9 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background: #f3f4f6;">
-                            <th style="padding: 12px; text-align: left;">TÃ­tulo</th>
+                             <th style="padding: 12px; text-align: left;">Título</th>
                             <th style="padding: 12px; text-align: left;">Fecha</th>
-                            <th style="padding: 12px; text-align: left;">DuraciÃ³n</th>
+                             <th style="padding: 12px; text-align: left;">Duración</th>
                             <th style="padding: 12px; text-align: center;">Acciones</th>
                         </tr>
                     </thead>
@@ -190,7 +190,7 @@
                 });
 
                 if (stream.getAudioTracks().length === 0) {
-                    alert('No se detectÃ³ micrÃ³fono');
+                 alert('No se detectó micrófono');
                     return;
                 }
 
@@ -219,7 +219,7 @@
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     let transcripcionLive = document.getElementById('transcripcion-live').value.trim();
 
-                    document.getElementById('recording-status').textContent = 'Finalizando transcripciÃ³n...';
+                     document.getElementById('recording-status').textContent = 'Finalizando transcripción...';
                     document.getElementById('transcripcion-indicator').textContent = '(Procesando audio final...)';
 
                     const transcripcionWhisper = await transcribirConWhisper(audioBlob);
@@ -228,7 +228,7 @@
                     document.getElementById('transcripcion-indicator').textContent = '(Finalizado)';
 
                     guardarAudio(audioBlob, transcripcionFinal);
-                    document.getElementById('recording-status').textContent = 'Â¡GrabaciÃ³n guardada!';
+                     document.getElementById('recording-status').textContent = '¡Grabación guardada!';
                 };
 
                 mediaRecorder.start(3000);
@@ -300,7 +300,7 @@
                 detenerTranscripcionEnVivo();
                 document.getElementById('btn-grabar').style.display = 'inline-block';
                 document.getElementById('btn-parar').style.display = 'none';
-                document.getElementById('recording-status').textContent = 'Procesando transcripciÃ³n...';
+                 document.getElementById('recording-status').textContent = 'Procesando transcripción...';
                 document.getElementById('timer').style.display = 'none';
                 document.getElementById('visualizer-container').style.display = 'none';
             }
@@ -356,8 +356,8 @@
         function guardarAudio(audioBlob, transcripcion) {
             const titulo = document.getElementById('titulo_reunion').value;
             const textoFinal = transcripcion || document.getElementById('transcripcion-live').value || document.getElementById('transcripcion-manual').value;
-            if (!titulo) {
-                alert('Ingrese un tÃ­tulo');
+             if (!titulo) {
+                 alert('Ingrese un título');
                 return;
             }
             const formData = new FormData();
@@ -393,8 +393,8 @@
             document.getElementById('transcripcion-manual').focus();
         }
 
-        function eliminarGrabacion(id) {
-            if (!confirm('Â¿EstÃ¡s seguro de que deseas eliminar esta grabaciÃ³n?')) return;
+         function eliminarGrabacion(id) {
+             if (!confirm('¿Estás seguro de que deseas eliminar esta grabación?')) return;
             fetch('{{ url_for("auth.eliminar_grabacion", grabacion_id=0) }}'.replace('/0', '/' + id), {
                 method: 'POST'
             })
