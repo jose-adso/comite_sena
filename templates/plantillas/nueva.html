@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Plantilla</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
+        <div class="navbar-menu">
+            <a href="{{ url_for('plantillas.gestionar_plantillas') }}" class="btn-nav btn-secondary">← Volver</a>
+        </div>
+    </nav>
+
+     <div class="container-dashboard">
+         <div class="admin-panel" style="max-width: 600px; margin: 0 auto;">
+             <h2>📄 Cargar Nueva Plantilla DOCX</h2>
+             <p style="color: #666; margin-bottom: 20px;">
+                 Suba un archivo DOCX. El nombre del archivo será usado como nombre de la plantilla.
+             </p>
+
+             <form method="POST" enctype="multipart/form-data">
+                 <!-- Archivo -->
+                 <div class="form-group">
+                     <label for="archivo">Archivo DOCX *</label>
+                     <input type="file" 
+                            id="archivo" 
+                            name="archivo" 
+                            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                     <small style="color: #666;">Seleccione el archivo DOCX que desea registrar como plantilla.</small>
+                 </div>
+
+                 <!-- Botones -->
+                 <div style="display: flex; gap: 10px; margin-top: 20px;">
+                     <button type="submit" class="btn btn-primary">
+                         <i class="fas fa-save"></i> Guardar Plantilla
+                     </button>
+                     <a href="{{ url_for('plantillas.gestionar_plantillas') }}" class="btn btn-secondary">
+                         <i class="fas fa-times"></i> Cancelar
+                     </a>
+                 </div>
+             </form>
+         </div>
+     </div>
+ </body>
+</html>

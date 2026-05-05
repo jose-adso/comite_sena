@@ -120,18 +120,8 @@ def validar_password(password):
         return False, "La contraseña debe tener al menos 8 caracteres"
     if len(re.findall(r'[A-Z]', password)) < 1:
         return False, "La contraseña debe contener al menos 1 letra mayúscula"
-    if len(re.findall(r'[a-z]', password)) < 1:
-        return False, "La contraseña debe contener al menos 1 letra minúscula"
-    if len(re.findall(r'\d', password)) < 1:
-        return False, "La contraseña debe contener al menos 1 número"
-    if len(re.findall(r'[!@#$%^&*(),.?\":{}|<>_~\-]', password)) < 1:
+    if len(re.findall(r'[!@#$%^&*(),.?":{}|<>_~\-]', password)) < 1:
         return False, "La contraseña debe contener al menos 1 carácter especial (!@#$%^&*(),.?\":{}|<>_~-)"
-    if re.search(r'(.)\1{2,}', password):
-        return False, "La contraseña no puede tener 3 o más caracteres iguales consecutivos"
-    password_lower = password.lower()
-    for patron in PATRONES_COMUNES:
-        if patron in password_lower:
-            return False, "La contraseña no puede contener palabras comunes"
     return True, ""
 
 
@@ -145,16 +135,36 @@ def password_ya_usada(usuario, nueva_password):
 
 
 # ── Roles / sesión ────────────────────────────────────────────────────────────
+def _get_rol_real():
+    """Obtiene el rol real del usuario (asignado en BD), no el rol activo seleccionado."""
+    rol = session.get('rol_real') or session.get('rol') or ''
+    return rol.strip().lower()
+
+
 def es_admin():
-    return get_rol_activo() in ['administrador', 'planta', 'super admin']
+    """Super admin siempre es admin, sin importar el rol activo seleccionado."""
+    if _get_rol_real() == 'super admin':
+        return True
+    return get_rol_activo() in ['administrador', 'planta']
 
 
 def es_super_o_admin():
-    return get_rol_activo() in ['administrador', 'super admin']
+    """Super admin siempre incluido, sin importar el rol activo."""
+    rol_real = _get_rol_real().replace(' ', '')
+    if rol_real == 'superadmin':
+        return True
+    # Para roles no-super-admin, Only administradores activos
+    return get_rol_activo() == 'administrador'
 
 
-def es_docente():
-    return get_rol_activo() in ['instructor']
+def es_superadmin():
+    """Verifica si el usuario es super admin por su rol real."""
+    return _get_rol_real() == 'super admin'
+
+
+def tiene_acceso_total():
+    """Super admin tiene acceso a todas las vistas y funcionalidades sin importar el rol activo."""
+    return es_superadmin() or es_admin()
 
 
 def get_rol_activo():
@@ -348,12 +358,22 @@ def _replace_in_paragraph(paragraph, replacements):
     if not paragraph.runs:
         return
 
+    # Concatenar todo el texto del párrafo
+    full_text = ''.join(run.text for run in paragraph.runs)
+
+    # Aplicar todos los reemplazos sobre el texto completo
+    new_text = full_text
     for placeholder, value in replacements.items():
         replacement = '' if value is None else str(value)
-        
-        for run in paragraph.runs:
-            if run.text and placeholder in run.text:
-                run.text = run.text.replace(placeholder, replacement)
+        new_text = new_text.replace(placeholder, replacement)
+
+    # Si hubo cambios, reemplazar todo el texto en el primer run y limpiar los demás
+    if new_text != full_text:
+        if paragraph.runs:
+            paragraph.runs[0].text = new_text
+            # Vaciar los runs restantes para evitar texto duplicado
+            for run in paragraph.runs[1:]:
+                run.text = ''
 
 
 def _replace_placeholders_in_container(container, replacements):

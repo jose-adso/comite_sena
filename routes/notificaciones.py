@@ -9,7 +9,8 @@ from docx import Document
 
 from models.falla import Falla
 from routes.auth import auth_bp
-from routes.utils import es_admin, _replace_placeholders_doc, _enviar_pdf_siempre, etiqueta_rol_visible, get_rol_activo
+from routes.utils import es_admin, get_rol_activo, etiqueta_rol_visible, tiene_acceso_total
+from routes.utils import _replace_placeholders_doc, _enviar_pdf_siempre
 
 
 # ── Helpers de notificaciones ─────────────────────────────────────────────────
@@ -101,8 +102,8 @@ def vista_notificaciones():
         flash('Debe iniciar sesión primero', 'error')
         return redirect(url_for('auth.index'))
 
-    if not es_admin():
-        flash('No tiene permisos para ver esta sección', 'error')
+    if not tiene_acceso_total():
+        flash('No tiene permisos para acceder a esta sección', 'error')
         return redirect(url_for('auth.dashboard'))
 
     filtro_instructor = request.args.get('filter_instructor', '').strip()
@@ -135,7 +136,7 @@ def generar_notificacion_pdf():
         flash('Debe iniciar sesión primero', 'error')
         return redirect(url_for('auth.index'))
 
-    if not es_admin():
+    if not tiene_acceso_total():
         flash('No tiene permisos para realizar esta acción', 'error')
         return redirect(url_for('auth.dashboard'))
 

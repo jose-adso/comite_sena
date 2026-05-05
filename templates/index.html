@@ -6,6 +6,26 @@
     <title>Sistema de Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+    <style>
+        .password-requirements { 
+            margin: 20px 0 0; 
+            padding: 12px 16px; 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            border: 1px solid #dee2e6; 
+            text-align: left;
+        }
+        .req { 
+            font-size: .8rem; 
+            padding: 3px 0; 
+            color: #dc3545; 
+            transition: color .25s; 
+        }
+        .req.ok { 
+            color: #198754; 
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <div class="auth-container">
@@ -31,26 +51,47 @@
                 <div class="form-group">
                     <label for="password">Contraseña</label>
                     <input type="password" id="password" name="password" required
-                           placeholder="Ingrese su contraseña">
+                           placeholder="Ingrese su contraseña" minlength="8"
+                           oninput="validarRequisitos()">
                     <span class="password-toggle" onmouseenter="showPassword()" onmouseleave="hidePassword()">👁️</span>
                 </div>
                 <button type="submit" class="btn btn-primary">Ingresar</button>
             </form>
 
             <div style="text-align: center; margin-top: 15px;">
+                <a href="{{ url_for('auth.olvide_usuario') }}" style="color: #198754; text-decoration: none; font-size: 0.9rem; margin-right: 15px;">
+                    ¿Olvidaste tu usuario?
+                </a>
                 <a href="{{ url_for('auth.olvide_password') }}" style="color: #198754; text-decoration: none; font-size: 0.9rem;">
                     ¿Olvidaste tu contraseña?
                 </a>
             </div>
 
-            <div class="security-badge">
-                <span class="lock-icon">🔒</span>
-                <span>Contraseña encriptada con Bcrypt</span>
+            <!-- Requisitos de contraseña con validación en tiempo real -->
+            <div class="password-requirements" id="requisitos">
+                <p style="margin:0 0 8px; font-weight:600; font-size:.85rem; color:#555;">Requisitos de contraseña:</p>
+                <div class="req" id="req-len">❌ Mínimo 8 caracteres</div>
+                <div class="req" id="req-upper">❌ Al menos 1 letra mayúscula (A-Z)</div>
+                <div class="req" id="req-special">❌ Al menos 1 carácter especial (!@#$%^&amp;*...)</div>
             </div>
-        </div>
     </div>
 
     <script>
+        function validarRequisitos() {
+            const pwd = document.getElementById('password').value;
+
+            toggle('req-len',     pwd.length >= 8);
+            toggle('req-upper',   /[A-Z]/.test(pwd));
+            toggle('req-special', /[!@#$%^&*(),.?":{}|<>_~\-]/.test(pwd));
+        }
+
+        function toggle(id, ok) {
+            const el = document.getElementById(id);
+            const texto = el.textContent.slice(2);
+            el.textContent = (ok ? '✅' : '❌') + ' ' + texto;
+            el.classList.toggle('ok', ok);
+        }
+
         function showPassword() {
             document.getElementById('password').type = 'text';
         }
@@ -61,3 +102,4 @@
     </script>
 </body>
 </html>
+

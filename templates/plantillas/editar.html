@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Plantilla</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
+        <div class="navbar-menu">
+            <a href="{{ url_for('plantillas.gestionar_plantillas') }}" class="btn-nav btn-secondary">← Volver</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        <div class="admin-panel" style="max-width: 600px; margin: 0 auto;">
+            <h2>✏️ Editar Plantilla</h2>
+
+            <form method="POST" enctype="multipart/form-data">
+                <!-- Nombre -->
+                <div class="form-group">
+                    <label for="nombre">Nombre de la Plantilla *</label>
+                    <input type="text" 
+                           id="nombre" 
+                           name="nombre" 
+                           required 
+                           value="{{ plantilla.nombre }}"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+
+                <!-- Tipo de Uso -->
+                <div class="form-group">
+                    <label for="tipo_uso">Tipo de Uso</label>
+                    <select id="tipo_uso" 
+                            name="tipo_uso" 
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="notificacion" {% if plantilla.tipo_uso == 'notificacion' %}selected{% endif %}>Notificación</option>
+                        <option value="acta" {% if plantilla.tipo_uso == 'acta' %}selected{% endif %}>Acta</option>
+                        <option value="formato_falla" {% if plantilla.tipo_uso == 'formato_falla' %}selected{% endif %}>Formato de Falla</option>
+                        <option value="resolucion" {% if plantilla.tipo_uso == 'resolucion' %}selected{% endif %}>Resolución</option>
+                        <option value="informe" {% if plantilla.tipo_uso == 'informe' %}selected{% endif %}>Informe</option>
+                        <option value="comunicado" {% if plantilla.tipo_uso == 'comunicado' %}selected{% endif %}>Comunicado</option>
+                        <option value="otro" {% if plantilla.tipo_uso == 'otro' %}selected{% endif %}>Otro</option>
+                    </select>
+                </div>
+
+                <!-- Descripción -->
+                <div class="form-group">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" 
+                              name="descripcion" 
+                              rows="3" 
+                              style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">{{ plantilla.descripcion or '' }}</textarea>
+                </div>
+
+                <!-- Archivo actual -->
+                <div class="form-group">
+                    <label>Archivo actual</label>
+                    <div style="padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                        <i class="fas fa-file-word"></i> 
+                        <a href="{{ url_for('static', filename=plantilla.archivo_path) }}" target="_blank">
+                            {{ plantilla.archivo_path.split('/')[-1] }}
+                        </a>
+                    </div>
+                    <small style="color: #666;">Dejar en blanco para mantener el archivo actual</small>
+                </div>
+
+                <!-- Nuevo archivo (opcional) -->
+                <div class="form-group">
+                    <label for="archivo">Reemplazar archivo (opcional)</label>
+                    <input type="file" 
+                           id="archivo" 
+                           name="archivo" 
+                           accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"
+                           onchange="toggleContenidoEditor()">
+                    <small style="color: #666;">Solo archivos .docx. Si no se selecciona, puedes editar el contenido a continuación.</small>
+                </div>
+
+                <!-- Editor de Contenido del Documento -->
+                <div class="form-group" style="margin-top: 30px; border-top: 2px solid #e5e7eb; padding-top: 20px;">
+                    <label for="contenido_texto" style="font-weight: 600; color: #0f5132;">
+                        <i class="fas fa-edit"></i> Editar Contenido del Documento
+                    </label>
+                    <textarea id="contenido_texto" 
+                              name="contenido_texto" 
+                              rows="20" 
+                              style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.6; resize: vertical;">{{ contenido_texto }}</textarea>
+                    <small style="color: #666; display: block; margin-top: 8px;">
+                        Cada línea representa un párrafo. Edita el texto directamente. Los cambios se guardarán en el archivo DOCX.
+                    </small>
+                </div>
+
+                <script>
+                function toggleContenidoEditor() {
+                    const archivoInput = document.getElementById('archivo');
+                    const contenidoField = document.getElementById('contenido_texto');
+                    if (archivoInput.files.length > 0) {
+                        // Si se selecciona un archivo nuevo, deshabilitar el editor de contenido
+                        contenidoField.disabled = true;
+                        contenidoField.style.opacity = '0.6';
+                        contenidoField.placeholder = 'El contenido se actualizará con el nuevo archivo subido...';
+                    } else {
+                        contenidoField.disabled = false;
+                        contenidoField.style.opacity = '1';
+                        contenidoField.placeholder = '';
+                    }
+                }
+                // Ejecutar al cargar por si hay archivo preseleccionado
+                document.addEventListener('DOMContentLoaded', toggleContenidoEditor);
+                </script>
+
+                <!-- Botones -->
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                    <a href="{{ url_for('plantillas.gestionar_plantillas') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

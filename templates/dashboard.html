@@ -11,28 +11,26 @@
 <body>
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="navbar-brand">Sistema Macro Sena</div>
+        <a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
         <div class="navbar-menu">
             {% if rol == 'super admin' %}
+            <a href="{{ url_for('auth.vista_grabar_reunion') }}" class="btn-nav btn-info-nav">🎙️ Grabar Reunión</a>
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
             <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
             <a href="{{ url_for('usuarios.gestionar_usuarios') }}" class="btn-nav btn-info-nav">👥 Gestionar Usuarios</a>
             {% elif rol == 'administrador' %}
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
             <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
-            <a href="{{ url_for('usuarios.registrar_usuario') }}" class="btn-nav btn-info-nav">👤 Registrar Usuario</a>
+            <a href="{{ url_for('plantillas.gestionar_plantillas') }}" class="btn-nav btn-info-nav">📁 Plantillas</a>
             {% elif rol == 'planta' %}
+            <a href="{{ url_for('auth.vista_grabar_reunion') }}" class="btn-nav btn-info-nav">🎙️ Grabar Reunión</a>
             <a href="{{ url_for('auth.vista_historial') }}" class="btn-nav btn-info-nav">📋 Historial de Fallas</a>
             <a href="{{ url_for('auth.vista_registrar_falla') }}" class="btn-nav btn-info-nav">📝 Registrar Falla</a>
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Reclamos Instructores</a>
             <a href="{{ url_for('auth.vista_notificaciones') }}" class="btn-nav btn-info-nav">📄 Notificaciones PDF</a>
             {% elif rol == 'instructor' %}
-            <a href="{{ url_for('auth.historial_reclamos') }}" class="btn-nav btn-info-nav">📌 Mis Reclamos</a>
-            {% endif %}
+{% endif %}
             
             {% if puede_cambiar_rol %}
             <form action="{{ url_for('auth.cambiar_rol') }}" method="POST" class="navbar-role-form">

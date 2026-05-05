@@ -1,4 +1,6 @@
 ﻿from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+import secrets
+from datetime import datetime, timedelta
 
 from models.usuario import Usuario
 
@@ -9,6 +11,7 @@ from routes.utils import (
     es_admin,
     puede_cambiar_rol,
     roles_disponibles_para_usuario,
+    enviar_email,
 )
 
 auth_bp = Blueprint('auth', __name__)
@@ -92,5 +95,3 @@ def logout():
     session.clear()
     flash('Sesion cerrada exitosamente', 'success')
     return redirect(url_for('auth.index'))
-
-

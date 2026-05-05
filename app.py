@@ -2,13 +2,18 @@ from config import app, db, bcrypt
 from models.usuario import Usuario
 from models.falla import Falla
 from models.reclamo import Reclamo
+from models.grabacion import Grabacion
+from models.plantilla import Plantilla
 from routes import auth_bp
 from routes.usuarios import usuarios_bp
+from routes.plantillas import plantillas_bp
+from routes.password import *
 import base64
 
 # Registrar Blueprint de rutas
 app.register_blueprint(auth_bp)
 app.register_blueprint(usuarios_bp)
+app.register_blueprint(plantillas_bp)
 
 # Contraseña del super admin (codificada en Base64 para que no sea visible en texto plano)
 _SUPERADMIN_PASSWORD_B64 = "amhvc2V0NDBA="

@@ -1,0 +1,410 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grabar ReuniÃ³n - Sistema Macro Sena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
+        <div class="navbar-menu">
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">â† Volver al Dashboard</a>
+            <span class="navbar-user">ðŸ‘¤ {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>
+            <a href="/logout" class="btn-nav btn-logout">Cerrar SesiÃ³n</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-panel show">
+            <h2>ðŸŽ™ï¸ Grabar ReuniÃ³n</h2>
+            <p style="margin-bottom: 20px; color: #4b5563;">
+                Use esta herramienta para grabar audio de reuniones. Luego podrÃ¡ transcribir y generar un PDF.
+            </p>
+
+            <div class="form-group">
+                <label for="titulo_reunion">TÃ­tulo de la ReuniÃ³n</label>
+                <input type="text" id="titulo_reunion" name="titulo_reunion" required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       placeholder="Ej: ComitÃ© de EvaluaciÃ³n - Abril 2026">
+            </div>
+
+            <div class="form-group">
+                <label for="claim_id">Asociar a Reclamo o Falla de Aprendiz (opcional)</label>
+                <select id="claim_id" name="claim_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    <option value="">-- Seleccionar --</option>
+                    {% for item in reclamos %}
+                    <option value="{{ item.id }}">{{ item.titulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="fecha_reunion">Fecha de la ReuniÃ³n</label>
+                <input type="date" id="fecha_reunion" name="fecha_reunion" required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       value="{{ today_date }}">
+            </div>
+
+            <div style="text-align: center; margin: 30px 0; padding: 30px; background: #f9fafb; border-radius: 8px;">
+                <div style="font-size: 0.9em; margin-bottom: 10px; color: #dc2626;">
+                   âš ï¸ Navegadores: Chrome, Edge, Firefox, Brave<br>
+                   âš ï¸ TranscripciÃ³n: <strong>Offline con Whisper</strong> (sin Internet)
+                </div>
+                <div id="mic-test-container" style="margin-bottom: 15px;">
+                    <span id="mic-test-status" style="font-size: 0.9em; color: #059669;">
+                        <i class="fas fa-microphone"></i> MicrÃ³fono listo
+                    </span>
+                </div>
+                <div id="recording-status" style="font-size: 1.2em; margin-bottom: 20px; color: #6b7280;">
+                   Listo para grabar
+                </div>
+                
+                <button id="btn-grabar" onclick="iniciarGrabacion()" 
+                        class="btn btn-primary" style="padding: 15px 30px; font-size: 1.2em;">
+                    <i class="fas fa-microphone"></i> Iniciar GrabaciÃ³n
+                </button>
+                
+                <button id="btn-parar" onclick="detenerGrabacion()" 
+                        class="btn btn-danger" style="padding: 15px 30px; font-size: 1.2em; display: none;">
+                    <i class="fas fa-stop"></i> Detener GrabaciÃ³n
+                </button>
+                
+                <div id="timer" style="font-size: 2em; margin-top: 20px; color: #dc2626; display: none;">
+                    00:00
+                </div>
+
+                <!-- Ãrea de transcripciÃ³n en tiempo real -->
+                <div id="transcripcion-container" style="margin-top: 20px; display: none; text-align: left;">
+                    <h4 style="margin-bottom: 10px; color: #059669;">
+                        <i class="fas fa-language"></i> TranscripciÃ³n en tiempo real
+                        <span id="transcripcion-indicator" style="font-size: 0.7em; color: #22c55e; margin-left: 10px;">
+                            (Escuchando...)
+                        </span>
+                    </h4>
+                    <textarea id="transcripcion-live"
+                              style="width: 100%; height: 150px; padding: 10px; border: 2px solid #22c55e; border-radius: 8px; background: #f0fdf4; font-size: 1em; resize: vertical;"
+                              placeholder="La transcripciÃ³n aparecerÃ¡ aquÃ­ mientras hablas..."></textarea>
+                    <div style="margin-top: 8px;">
+                        <button type="button" onclick="habilitarModoManual()"
+                                style="padding: 4px 12px; font-size: 0.85em; background: #374151; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-keyboard"></i> Modo Manual
+                        </button>
+                        <span style="font-size: 0.8em; color: #6b7280; margin-left: 10px;">
+                            TambiÃ©n se procesarÃ¡ con Whisper al finalizar la grabaciÃ³n
+                        </span>
+                    </div>
+                </div>
+                <div id="manual-container" style="margin-top: 20px; display: none; text-align: left;">
+                    <textarea id="transcripcion-manual"
+                              style="width: 100%; height: 150px; padding: 10px; border: 2px solid #22c55e; border-radius: 8px; background: #f0fdf4; font-size: 1em; resize: vertical;"
+                              placeholder="Escribe la transcripciÃ³n manualmente..."></textarea>
+                </div>
+
+                <!-- Visualizador de audio (ecualizador) -->
+                <div id="visualizer-container" style="margin-top: 20px; display: none;">
+                    <canvas id="audio-visualizer" width="600" height="100" 
+                            style="background: #1f2937; border-radius: 8px; width: 100%; max-width: 600px; height: 100px;">
+                    </canvas>
+                    <p style="font-size: 0.85em; color: #6b7280; margin-top: 8px;">
+                        <i class="fas fa-wave-square"></i> Nivel de audio en tiempo real
+                    </p>
+                </div>
+            </div>
+
+            <div id="grabaciones-guardadas" style="margin-top: 30px;">
+                <h3 style="margin-bottom: 15px;">Grabaciones Recientes</h3>
+                {% if grabaciones %}
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f3f4f6;">
+                            <th style="padding: 12px; text-align: left;">TÃ­tulo</th>
+                            <th style="padding: 12px; text-align: left;">Fecha</th>
+                            <th style="padding: 12px; text-align: left;">DuraciÃ³n</th>
+                            <th style="padding: 12px; text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grabacion in grabaciones %}
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 12px;">{{ grabacion.titulo }}</td>
+                            <td style="padding: 12px;">{{ grabacion.fecha }}</td>
+                            <td style="padding: 12px;">{{ grabacion.duracion }}</td>
+                            <td style="padding: 12px; text-align: center;">
+                                <a href="{{ url_for('auth.editar_grabacion', grabacion_id=grabacion.id) }}" 
+                                   class="btn btn-sm" style="background: #3b82f6; color: white;">
+                                    <i class="fas fa-edit"></i> Editar/Transcribir
+                                </a>
+                                 <a href="{{ url_for('auth.generar_acta', grabacion_id=grabacion.id) }}"
+                                    class="btn btn-sm" style="background: #059669; color: white;">
+                                     <i class="fas fa-file-word"></i> Acta
+                                 </a>
+                                <button onclick="eliminarGrabacion({{ grabacion.id }})" 
+                                        class="btn btn-sm" style="background: #dc2626; color: white; border: none; cursor: pointer;">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: #6b7280; text-align: center; padding: 20px;">No hay grabaciones guardadas.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+      <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let timerInterval;
+        let seconds = 0;
+        let audioContext;
+        let analyser;
+        let dataArray;
+        let animationId;
+        let microphone;
+        let grabando = false;
+        let liveTranscriptionInterval = null;
+        let liveAudioChunks = [];
+        let horaInicio = null;
+
+        async function iniciarGrabacion() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                });
+
+                if (stream.getAudioTracks().length === 0) {
+                    alert('No se detectÃ³ micrÃ³fono');
+                    return;
+                }
+
+                await fetch('{{ url_for("auth.limpiar_transcripcion") }}', { method: 'POST' });
+
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                liveAudioChunks = [];
+                grabando = true;
+                horaInicio = new Date();
+
+                setupAudioVisualizer(stream);
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        liveAudioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    grabando = false;
+                    stopAudioVisualizer();
+                    detenerTranscripcionEnVivo();
+
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    let transcripcionLive = document.getElementById('transcripcion-live').value.trim();
+
+                    document.getElementById('recording-status').textContent = 'Finalizando transcripciÃ³n...';
+                    document.getElementById('transcripcion-indicator').textContent = '(Procesando audio final...)';
+
+                    const transcripcionWhisper = await transcribirConWhisper(audioBlob);
+                    const transcripcionFinal = transcripcionWhisper || transcripcionLive || '';
+                    document.getElementById('transcripcion-live').value = transcripcionFinal;
+                    document.getElementById('transcripcion-indicator').textContent = '(Finalizado)';
+
+                    guardarAudio(audioBlob, transcripcionFinal);
+                    document.getElementById('recording-status').textContent = 'Â¡GrabaciÃ³n guardada!';
+                };
+
+                mediaRecorder.start(3000);
+
+                iniciarTranscripcionEnVivo();
+
+                document.getElementById('btn-grabar').style.display = 'none';
+                document.getElementById('btn-parar').style.display = 'inline-block';
+                document.getElementById('recording-status').textContent = 'ðŸ”´ Grabando...';
+                document.getElementById('timer').style.display = 'block';
+                document.getElementById('visualizer-container').style.display = 'block';
+                document.getElementById('transcripcion-container').style.display = 'block';
+
+                seconds = 0;
+                document.getElementById('timer').textContent = '00:00';
+                document.getElementById('transcripcion-live').value = '';
+
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                    const secs = (seconds % 60).toString().padStart(2, '0');
+                    document.getElementById('timer').textContent = `${mins}:${secs}`;
+                }, 1000);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function iniciarTranscripcionEnVivo() {
+            document.getElementById('transcripcion-indicator').textContent = '(Transcribiendo en vivo...)';
+            liveTranscriptionInterval = setInterval(() => {
+                if (!grabando || liveAudioChunks.length === 0) return;
+
+                const chunk = liveAudioChunks.splice(0, liveAudioChunks.length);
+                const blob = new Blob(chunk, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('audio', blob, 'chunk.webm');
+
+                fetch('{{ url_for("auth.transcribir_en_vivo") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.text) {
+                        document.getElementById('transcripcion-live').value = data.text;
+                        document.getElementById('transcripcion-live').scrollTop = document.getElementById('transcripcion-live').scrollHeight;
+                    }
+                })
+                .catch(e => console.error('Error envivo:', e));
+            }, 4000);
+        }
+
+        function detenerTranscripcionEnVivo() {
+            if (liveTranscriptionInterval) {
+                clearInterval(liveTranscriptionInterval);
+                liveTranscriptionInterval = null;
+            }
+        }
+
+        function detenerGrabacion() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                grabando = false;
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                clearInterval(timerInterval);
+                cancelAnimationFrame(animationId);
+                detenerTranscripcionEnVivo();
+                document.getElementById('btn-grabar').style.display = 'inline-block';
+                document.getElementById('btn-parar').style.display = 'none';
+                document.getElementById('recording-status').textContent = 'Procesando transcripciÃ³n...';
+                document.getElementById('timer').style.display = 'none';
+                document.getElementById('visualizer-container').style.display = 'none';
+            }
+        }
+
+        function setupAudioVisualizer(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+            const canvas = document.getElementById('audio-visualizer');
+            const canvasCtx = canvas.getContext('2d');
+            function draw() {
+                animationId = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                canvasCtx.fillStyle = '#1f2937';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i] / 2;
+                    canvasCtx.fillStyle = `rgb(${barHeight + 25 * (i/bufferLength)},${250 * (i/bufferLength)},50)`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+
+        function stopAudioVisualizer() {
+            if (audioContext && audioContext.state !== 'closed') audioContext.close();
+            if (microphone) microphone.disconnect();
+        }
+
+        async function transcribirConWhisper(audioBlob) {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'grabacion.webm');
+            try {
+                const response = await fetch('{{ url_for("auth.transcribir_audio") }}', {
+                    method: 'POST', body: formData
+                });
+                const data = await response.json();
+                return data.success ? (data.text || '') : '';
+            } catch (error) {
+                console.error('Error Whisper:', error);
+                return '';
+            }
+        }
+
+        function guardarAudio(audioBlob, transcripcion) {
+            const titulo = document.getElementById('titulo_reunion').value;
+            const textoFinal = transcripcion || document.getElementById('transcripcion-live').value || document.getElementById('transcripcion-manual').value;
+            if (!titulo) {
+                alert('Ingrese un tÃ­tulo');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'grabacion.webm');
+            formData.append('titulo', titulo);
+            formData.append('claim_id', document.getElementById('claim_id').value);
+            formData.append('fecha', document.getElementById('fecha_reunion').value);
+            formData.append('duracion', seconds);
+            formData.append('transcripcion', textoFinal);
+            if (horaInicio) {
+                formData.append('hora_inicio', horaInicio.toISOString());
+            }
+            fetch('{{ url_for("auth.guardar_grabacion") }}', {
+                method: 'POST', body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('GrabaciÃ³n guardada');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(e => {
+                console.error(e);
+                alert('Error al guardar');
+            });
+        }
+
+        function habilitarModoManual() {
+            document.getElementById('manual-container').style.display = 'block';
+            document.getElementById('transcripcion-manual').focus();
+        }
+
+        function eliminarGrabacion(id) {
+            if (!confirm('Â¿EstÃ¡s seguro de que deseas eliminar esta grabaciÃ³n?')) return;
+            fetch('{{ url_for("auth.eliminar_grabacion", grabacion_id=0) }}'.replace('/0', '/' + id), {
+                method: 'POST'
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { alert('GrabaciÃ³n eliminada'); location.reload(); }
+                else alert('Error: ' + data.error);
+            })
+            .catch(e => { console.error(e); alert('Error al eliminar'); });
+        }
+    </script>
+</body>
+</html>
