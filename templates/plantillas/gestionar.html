@@ -94,16 +94,12 @@
                        download>
                         <i class="fas fa-download"></i> Descargar
                     </a>
-                    {% if not plantilla.id %}
-                    <form action="{{ url_for('plantillas.registrar_plantilla_existente') }}" 
-                          method="POST" 
-                          style="display:inline;"
-                          onsubmit="return confirm('¿Registrar esta plantilla en la base de datos?');">
-                        <input type="hidden" name="archivo_path" value="{{ plantilla.archivo_path }}">
-                        <button type="submit" class="btn btn-success btn-sm" title="Registrar en BD">
-                            <i class="fas fa-check"></i> Registrar
-                        </button>
-                    </form>
+                    {% if plantilla.id %}
+                    <button onclick="eliminarPlantilla({{ plantilla.id }}, '{{ plantilla.nombre }}')"
+                            class="btn btn-danger btn-sm" 
+                            title="Eliminar">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
                     {% endif %}
                 </div>
             </td>
@@ -120,5 +116,31 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Formulario oculto para eliminar -->
+    <form id="form-eliminar" method="POST" style="display: none;">
+        <input type="hidden" name="_method" value="DELETE">
+    </form>
+
+    <script>
+        function eliminarPlantilla(id, nombre) {
+            if (confirm(`¿Estás seguro de que deseas eliminar la plantilla "${nombre}"?\nEsta acción eliminará el archivo y el registro de la base de datos.`)) {
+                fetch(`/eliminar-plantilla/${id}`, {
+                    method: 'POST'
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al eliminar la plantilla');
+                });
+            }
+        }
+    </script>
 </body>
 </html>

@@ -108,6 +108,7 @@ def nueva_plantilla():
             db.session.rollback()
             flash(f'Error al crear plantilla: {str(e)}', 'error')
             return redirect(url_for('plantillas.nueva_plantilla'))
+            return redirect(url_for('plantillas.nueva_plantilla'))
 
     return render_template(
         'plantillas/nueva.html',
@@ -187,3 +188,29 @@ def registrar_plantilla_existente():
         flash(f'Error al registrar plantilla: {str(e)}', 'error')
 
     return redirect(url_for('plantillas.gestionar_plantillas'))
+
+
+@plantillas_bp.route('/eliminar-plantilla/<int:plantilla_id>', methods=['POST'])
+def eliminar_plantilla(plantilla_id):
+    if 'usuario_id' not in session or not es_super_o_admin():
+        flash('No tiene permisos para eliminar plantillas', 'error')
+        return redirect(url_for('auth.dashboard'))
+
+    plantilla = Plantilla.query.get_or_404(plantilla_id)
+
+    try:
+        # Eliminar archivo físico
+        archivo_completo = os.path.join(current_app.root_path, 'static', plantilla.archivo_path)
+        if os.path.exists(archivo_completo):
+            os.remove(archivo_completo)
+
+        # Eliminar registro en BD
+        db.session.delete(plantilla)
+        db.session.commit()
+        flash(f'✅ Plantilla "{plantilla.nombre}" eliminada exitosamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar plantilla: {str(e)}', 'error')
+
+    return redirect(url_for('plantillas.gestionar_plantillas'))
+

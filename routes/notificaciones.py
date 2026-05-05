@@ -4,7 +4,7 @@ import tempfile
 import uuid
 from datetime import datetime, timedelta
 
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash, session, current_app
 from docx import Document
 
 from models.falla import Falla
@@ -15,7 +15,7 @@ from routes.utils import _replace_placeholders_doc, _enviar_pdf_siempre
 
 # ── Helpers de notificaciones ─────────────────────────────────────────────────
 def obtener_plantillas_notificacion():
-    plantillas_dir = os.path.join(os.path.dirname(__file__), '..', 'static', 'plantillas')
+    plantillas_dir = os.path.join(current_app.root_path, 'static', 'plantillas')
     if not os.path.exists(plantillas_dir):
         return []
     return sorted([f for f in os.listdir(plantillas_dir) if f.lower().endswith('.docx')])
@@ -163,7 +163,7 @@ def generar_notificacion_pdf():
             flash('No hay horarios disponibles para la fecha seleccionada. Use otra fecha.', 'error')
             return redirect(url_for('auth.vista_notificaciones'))
 
-        plantillas_dir = os.path.join(os.path.dirname(__file__), '..', 'static', 'plantillas')
+        plantillas_dir = os.path.join(current_app.root_path, 'static', 'plantillas')
         plantilla_path = os.path.join(plantillas_dir, plantilla_nombre)
 
         if not os.path.exists(plantilla_path):
