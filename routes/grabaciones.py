@@ -160,6 +160,8 @@ def guardar_grabacion():
         real_claim_id = claim_id if claim_id and claim_id > 0 else None
         real_falla_id = -claim_id if claim_id and claim_id < 0 else None
 
+        print(f'[DEBUG GUARDAR] claim_id recibido: {claim_id}, real_claim_id: {real_claim_id}, real_falla_id: {real_falla_id}')
+
         hora_inicio = None
         if hora_inicio_str:
             try:
@@ -358,7 +360,7 @@ def limpiar_transcripcion():
 
 
 def reemplazar_en_documento(doc, reemplazos):
-    """Reemplaza marcadores en pÃ¡rrafos, tablas y runs de un documento docx"""
+    """Reemplaza marcadores en párrafos, tablas y runs de un documento docx"""
     def _reemplazar_en_texto(texto):
         resultado = texto
         for marca, valor in reemplazos.items():
@@ -366,20 +368,25 @@ def reemplazar_en_documento(doc, reemplazos):
                 resultado = resultado.replace(marca, str(valor))
         return resultado
 
-    # PÃ¡rrafos del cuerpo
+    # Párrafos del cuerpo
     for para in doc.paragraphs:
-        if any(m in para.text for m in reemplazos):
-            # Reemplazar en cada run para preservar formato
-            for run in para.runs:
-                run.text = _reemplazar_en_texto(run.text)
+        texto_original = para.text
+        texto_nuevo = _reemplazar_en_texto(texto_original)
+        if texto_nuevo != texto_original:
+            # Limpiar runs y poner texto completo en el primer run
+            para.clear()
+            para.add_run(texto_nuevo)
 
     # Tablas
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for para in cell.paragraphs:
-                    for run in para.runs:
-                        run.text = _reemplazar_en_texto(run.text)
+                    texto_original = para.text
+                    texto_nuevo = _reemplazar_en_texto(texto_original)
+                    if texto_nuevo != texto_original:
+                        para.clear()
+                        para.add_run(texto_nuevo)
 
 
 @auth_bp.route('/generar-acta/<int:grabacion_id>')
@@ -427,36 +434,61 @@ def generar_acta(grabacion_id):
         hora_fin_dt = hora_inicio_dt + timedelta(seconds=grabacion.duracion)
         hora_fin = hora_fin_dt.strftime('%I:%M %p').lstrip('0').replace('AM', 'a.m.').replace('PM', 'p.m.')
 
-        # Datos del aprendiz
+        # Datos del aprendiz e instructor (pueden venir de Reclamo o Falla)
         nombre_aprendiz = 'No especificado'
         nombre_ficha = 'No especificado'
         numero_ficha = 'No especificado'
+        nombre_instructor = ''
+        cedula_instructor = ''
+        documento_aprendiz = ''
+        correo_aprendiz = ''
+        telefono_aprendiz = ''
+        descripcion_faltas = ''
 
+        # Obtener datos desde claim (reclamo) o falla
+        origen = None
+        print(f'[DEBUG ACTA] grabacion.claim_id={grabacion.claim_id}, grabacion.falla_id={grabacion.falla_id}')
         if grabacion.claim_id:
-            reclamo = Reclamo.query.get(grabacion.claim_id)
-            if reclamo:
-                nombre_aprendiz = reclamo.nombre_aprendiz
-                nombre_ficha = reclamo.nombre_ficha
-                numero_ficha = reclamo.numero_ficha
+            print(f'[DEBUG ACTA] Buscando Reclamo id={grabacion.claim_id}')
+            origen = Reclamo.query.get(grabacion.claim_id)
+            if origen:
+                print(f'[DEBUG ACTA] Reclamo encontrado: nombre_aprendiz="{origen.nombre_aprendiz}", nombre_ficha="{origen.nombre_ficha}", numero_ficha="{origen.numero_ficha}"')
+            else:
+                print(f'[DEBUG ACTA] Reclamo NO encontrado')
         elif grabacion.falla_id:
-            falla = Falla.query.get(grabacion.falla_id)
-            if falla:
-                nombre_aprendiz = falla.nombre_aprendiz
-                nombre_ficha = falla.nombre_ficha
-                numero_ficha = falla.numero_ficha
+            print(f'[DEBUG ACTA] Buscando Falla id={grabacion.falla_id}')
+            origen = Falla.query.get(grabacion.falla_id)
+            if origen:
+                print(f'[DEBUG ACTA] Falla encontrada: nombre_aprendiz="{origen.nombre_aprendiz}", nombre_ficha="{origen.nombre_ficha}", numero_ficha="{origen.numero_ficha}"')
+            else:
+                print(f'[DEBUG ACTA] Falla NO encontrada')
 
-        transcripcion = grabacion.transcripcion or 'Sin transcripciÃ³n'
+        if origen:
+            nombre_aprendiz = origen.nombre_aprendiz or 'No especificado'
+            nombre_ficha = origen.nombre_ficha or 'No especificado'
+            numero_ficha = origen.numero_ficha or 'No especificado'
+            nombre_instructor = origen.nombre_instructor or ''
+            cedula_instructor = origen.cedula_instructor or ''
+            documento_aprendiz = origen.documento_aprendiz or ''
+            correo_aprendiz = origen.correo_aprendiz or ''
+            telefono_aprendiz = origen.telefono_aprendiz or ''
+            descripcion_faltas = origen.descripcion_faltas or ''
+
+        transcripcion = grabacion.transcripcion or 'Sin transcripción'
 
         # Diccionario de reemplazos
+        # Diccionario de reemplazos - placeholders EXACTOS de ACTA.docx
         reemplazos = {
             '[fecha acta]': fecha_acta_str,
             '[inicia]': hora_inicio,
             '[fin]': hora_fin,
-            '[nombre aprendiz]': nombre_aprendiz,
+            '[nombre aperdiz]': nombre_aprendiz,
             '[nombre ficha]': nombre_ficha,
             '[numero ficha]': numero_ficha,
-            '[aquÃ­ se aplica la transcripcion]': transcripcion,
+            '[aquí se aplica la transcripcion]': transcripcion,
         }
+
+        print(f'[DEBUG ACTA] Reemplazos: {reemplazos}')
 
         reemplazar_en_documento(doc, reemplazos)
 
