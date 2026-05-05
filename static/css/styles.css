@@ -10,7 +10,7 @@ body {
     min-height: 100vh;
     background:
         linear-gradient(rgba(8, 35, 22, 0.55), rgba(8, 35, 22, 0.55)),
-        url("../16%20mar%202026,%2009_19_27.png");
+        url("../logo.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -39,7 +39,7 @@ a {
 .panel {
     background:
         linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
-        url("../16%20mar%202026,%2009_19_27.png");
+        url("../logo.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -289,19 +289,6 @@ a {
     gap: 10px;
 }
 
-.navbar-brand::before {
-    content: "";
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: #ffffff;
-    background-image: url("../16%20mar%202026,%2009_19_27.png");
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
-}
-
 .navbar-menu {
     display: flex;
     gap: 20px;
@@ -334,14 +321,14 @@ a {
 
 .container-dashboard {
     max-width: 1000px;
-    margin: 100px auto 40px;
+    margin: 150px auto 40px;
     padding: 0 20px;
 }
 
 .welcome-card {
     background:
         linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
-        url("../16%20mar%202026,%2009_19_27.png");
+        url("../logo.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -388,7 +375,7 @@ a {
 .admin-panel {
     background:
         linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
-        url("../16%20mar%202026,%2009_19_27.png");
+        url("../logo.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -396,6 +383,8 @@ a {
     padding: 30px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     border: none;
+    width: 100%;
+    max-width: 100%;
 }
 
 .admin-panel h2 {
@@ -439,11 +428,34 @@ tr:hover {
     width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
+    table-layout: fixed;
+}
+
+.fallas-table th,
+.fallas-table td {
+    padding: 10px 6px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    vertical-align: top;
+}
+
+.fallas-table th:nth-child(1), .fallas-table td:nth-child(1) { width: 40px; } /* # */
+.fallas-table th:nth-child(2), .fallas-table td:nth-child(2) { width: 150px; } /* Nombre */
+.fallas-table th:nth-child(3), .fallas-table td:nth-child(3) { width: 100px; } /* Tipo */
+.fallas-table th:nth-child(4), .fallas-table td:nth-child(4) { width: 130px; } /* Descripción */
+.fallas-table th:nth-child(5), .fallas-table td:nth-child(5) { width: 100px; } /* Creado por */
+.fallas-table th:nth-child(6), .fallas-table td:nth-child(6) { width: 110px; } /* Fecha */
+.fallas-table th:nth-child(7), .fallas-table td:nth-child(7) { width: 90px; } /* Estado */
+.fallas-table th:nth-child(8), .fallas-table td:nth-child(8) { width: 150px; } /* Acciones */
+
+.fallas-table tbody tr:hover {
+    background: #f5f5f5;
 }
 
 .table-responsive {
     overflow-x: auto;
     margin-top: 15px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .empty-state {
@@ -457,7 +469,7 @@ tr:hover {
 .card {
     background:
         linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
-        url("../16%20mar%202026,%2009_19_27.png");
+        url("../logo.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

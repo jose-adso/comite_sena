@@ -1,7 +1,6 @@
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 import secrets
 from datetime import datetime, timedelta
-
-from flask import render_template, request, redirect, url_for, flash, session
 
 from models.database import db, bcrypt
 from models.usuario import Usuario
@@ -81,6 +80,33 @@ def olvide_password():
         return redirect(url_for('auth.olvide_password'))
 
     return render_template('olvide_password.html')
+
+
+@auth_bp.route('/olvide-usuario', methods=['GET', 'POST'])
+def olvide_usuario():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        usuario = Usuario.query.filter_by(email=email).first()
+
+        if usuario:
+            enlace = url_for('auth.index', _external=True)
+            cuerpo = f"""
+            <h2>Recuperación de Usuario</h2>
+            <p>Hola <strong>{usuario.nombre or usuario.username}</strong>,</p>
+            <p>Tu nombre de usuario es: <strong style="font-size:1.1em; color:#198754;">{usuario.username}</strong></p>
+            <p><a href="{enlace}" style="background:#198754;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;">
+                Ir al inicio de sesión
+            </a></p>
+            <p>Si no solicitaste esto, ignora este mensaje.</p>
+            """
+            enviar_email(email, 'Recuperación de Usuario - Sistema Macro Sena', cuerpo)
+            flash('Si el correo está registrado, recibirás tu nombre de usuario.', 'success')
+        else:
+            flash('Si el correo está registrado, recibirás tu nombre de usuario.', 'success')
+
+        return redirect(url_for('auth.olvide_usuario'))
+
+    return render_template('olvide_usuario.html')
 
 
 @auth_bp.route('/restablecer/<token>', methods=['GET', 'POST'])

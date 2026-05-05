@@ -10,7 +10,7 @@
 </head>
 <body>
 	<nav class="navbar">
-		<div class="navbar-brand">Sistema Macro Sena</div>
+		<a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
 		<div class="navbar-menu">
 			<a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-info-nav">← Volver al Dashboard</a>
 				<span class="navbar-user">👤 {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize }}{% endif %}</span>

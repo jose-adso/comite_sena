@@ -9,7 +9,7 @@ from models.database import db
 from models.usuario import Usuario
 from models.reclamo import Reclamo, TIPOS_RECLAMO, ESTADOS_RECLAMO
 from routes.auth import auth_bp
-from routes.utils import es_admin, get_rol_activo, etiqueta_rol_visible
+from routes.utils import es_admin, get_rol_activo, etiqueta_rol_visible, tiene_acceso_total
 
 
 @auth_bp.route('/reclamo')
@@ -19,59 +19,9 @@ def vista_reclamo():
         flash('Debe iniciar sesión primero', 'error')
         return redirect(url_for('auth.index'))
 
-    if not es_admin():
-        flash('No tiene acceso a esta sección', 'error')
-        return redirect(url_for('auth.dashboard'))
-
-    usuario = Usuario.query.get(session['usuario_id'])
-    return render_template(
-        'reclamo.html',
-        username=session['username'],
-        rol_visible=etiqueta_rol_visible(),
-        tipos_reclamo=TIPOS_RECLAMO,
-        nombre_instructor=usuario.nombre or session['username'],
-        correo_instructor=usuario.email or '',
-    )
-
-
-@auth_bp.route('/registrar-reclamo', methods=['POST'])
-def registrar_reclamo():
-    """Registrar un nuevo reclamo"""
-    if 'usuario_id' not in session:
-        flash('Debe iniciar sesión primero', 'error')
-        return redirect(url_for('auth.index'))
-
-    if not es_admin():
-        flash('No tiene acceso a esta sección', 'error')
-        return redirect(url_for('auth.dashboard'))
-
-    nombre_instructor = (request.form.get('nombre_instructor') or '').strip()
-    cedula_instructor = (request.form.get('cedula_instructor') or '').strip()
-    correo_instructor = (request.form.get('correo_instructor') or '').strip()
-    nombre_aprendiz = (request.form.get('nombre_aprendiz') or '').strip()
-    documento_aprendiz = (request.form.get('documento_aprendiz') or '').strip()
-    nombre_ficha = (request.form.get('nombre_ficha') or '').strip()
-    numero_ficha = (request.form.get('numero_ficha') or '').strip()
-    tipo_reclamo = (request.form.get('tipo_reclamo') or '').strip()
-    descripcion = (request.form.get('descripcion') or '').strip()
-    fecha_incidente = request.form.get('fecha_incidente')
-
-    campos_requeridos = [
-        ('Nombre instructor', nombre_instructor),
-        ('Cédula instructor', cedula_instructor),
-        ('Correo instructor', correo_instructor),
-        ('Nombre aprendiz', nombre_aprendiz),
-        ('Documento aprendiz', documento_aprendiz),
-        ('Nombre ficha', nombre_ficha),
-        ('Número ficha', numero_ficha),
-        ('Tipo de reclamo', tipo_reclamo),
-        ('Descripción', descripcion),
-        ('Fecha del incidente', fecha_incidente),
-    ]
-    for etiqueta, valor in campos_requeridos:
-        if not valor:
-            flash(f'{etiqueta} es obligatorio', 'error')
-            return redirect(url_for('auth.vista_reclamo'))
+    if not tiene_acceso_total():
+        flash('No tiene permisos para esta acción', 'error')
+        return redirect(url_for('auth.vista_reclamo'))
 
     if tipo_reclamo not in TIPOS_RECLAMO:
         flash('Tipo de reclamo no válido', 'error')

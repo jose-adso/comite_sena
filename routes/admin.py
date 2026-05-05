@@ -8,7 +8,7 @@ from models.usuario import Usuario, ROLES_VALIDOS
 from routes.auth import auth_bp
 from routes.utils import es_admin, es_super_o_admin, validar_password, password_matches
 from routes.utils import get_rol_activo, etiqueta_rol_visible, puede_cambiar_rol, roles_disponibles_para_usuario
-from routes.utils import enviar_email
+from routes.utils import enviar_email, tiene_acceso_total
 
 
 @auth_bp.route('/dashboard')
@@ -22,7 +22,12 @@ def dashboard():
 
     fallas_nuevas = []
     if es_admin_usr:
-        fallas_nuevas = Falla.query.order_by(Falla.fecha_registro.desc()).limit(10).all()
+        cinco_dias = datetime.now() - timedelta(days=5)
+        fallas_nuevas = (Falla.query
+                        .filter(Falla.fecha_registro >= cinco_dias)
+                        .order_by(Falla.fecha_registro.desc())
+                        .limit(10)
+                        .all())
 
     return render_template(
         'dashboard.html',
@@ -42,7 +47,7 @@ def vista_historial():
         flash('Debe iniciar sesión primero', 'error')
         return redirect(url_for('auth.index'))
 
-    if not es_admin():
+    if not tiene_acceso_total():
         flash('No tiene permisos para ver esta sección', 'error')
         return redirect(url_for('auth.dashboard'))
 

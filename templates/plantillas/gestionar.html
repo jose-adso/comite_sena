@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Plantillas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
+        <div class="navbar-menu">
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-nav btn-secondary">← Volver</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2>📄 Gestión de Plantillas</h2>
+                <a href="{{ url_for('plantillas.nueva_plantilla') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Nueva Plantilla
+                </a>
+            </div>
+
+            {% if plantillas %}
+            <div class="table-responsive" style="overflow-x: auto;">
+                <table class="fallas-table" style="min-width: 800px;">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Creado por</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+    <tbody>
+        {% for plantilla in plantillas %}
+        <tr>
+            <td>{{ plantilla.id if plantilla.id else '—' }}</td>
+            <td>
+                <strong>{{ plantilla.nombre or '—' }}</strong>
+                <br>
+                <small class="text-gray-500">{{ plantilla.archivo_path }}</small>
+            </td>
+            <td>{{ plantilla.tipo_uso or 'General' }}</td>
+            <td>{{ plantilla.descripcion or '—' }}</td>
+            <td>
+                {% if plantilla.creado_por %}
+                    {{ plantilla.creado_por.username if plantilla.creado_por.username else plantilla.creado_por }}
+                {% else %}
+                    Archivo en disco
+                {% endif %}
+            </td>
+            <td>
+                {% if plantilla.fecha_creacion %}
+                    {{ plantilla.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+            <td>
+                {% if plantilla.activa %}
+                <span class="badge badge-success">Activa</span>
+                {% else %}
+                <span class="badge badge-secondary">Inactiva</span>
+                {% endif %}
+                {% if not plantilla.id %}
+                <span class="badge badge-warning" style="background: #ffc107; color: #000;">Sin registrar</span>
+                {% endif %}
+            </td>
+            <td>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <a href="{{ url_for('static', filename=plantilla.archivo_path) }}" 
+                       class="btn btn-info btn-sm" 
+                       title="Descargar" 
+                       download>
+                        <i class="fas fa-download"></i> Descargar
+                    </a>
+                    {% if not plantilla.id %}
+                    <form action="{{ url_for('plantillas.registrar_plantilla_existente') }}" 
+                          method="POST" 
+                          style="display:inline;"
+                          onsubmit="return confirm('¿Registrar esta plantilla en la base de datos?');">
+                        <input type="hidden" name="archivo_path" value="{{ plantilla.archivo_path }}">
+                        <button type="submit" class="btn btn-success btn-sm" title="Registrar en BD">
+                            <i class="fas fa-check"></i> Registrar
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No hay plantillas registradas.</p>
+                <a href="{{ url_for('plantillas.nueva_plantilla') }}" class="btn btn-primary">Crear primera plantilla</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

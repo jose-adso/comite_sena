@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar GrabaciÃ³n - Sistema Macro Sena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=8) }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('auth.dashboard') }}" class="navbar-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Macro Sena" style="height: 40px;"></a>
+        <div class="navbar-menu">
+            <a href="{{ url_for('auth.vista_grabar_reunion') }}" class="btn-nav btn-info-nav">â† Volver</a>
+            <span class="navbar-user">ðŸ‘¤ {{ username }}{% if rol_visible %} | {{ rol_visible|capitalize() }}{% endif %}</span>
+            <a href="/logout" class="btn-nav btn-logout">Cerrar SesiÃ³n</a>
+        </div>
+    </nav>
+
+    <div class="container-dashboard">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-panel show">
+            <h2>ðŸŽ™ï¸ Editar GrabaciÃ³n</h2>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #f3f4f6; border-radius: 8px;">
+                <h3 style="margin-bottom: 10px;">{{ grabacion.titulo }}</h3>
+                <p style="color: #6b7280; font-size: 0.9em;">
+                    <i class="fas fa-calendar"></i> {{ grabacion.fecha.strftime('%Y-%m-%d') if grabacion.fecha else 'Sin fecha' }} 
+                    <span style="margin: 0 10px;">|</span>
+                    <i class="fas fa-clock"></i> 
+                    {% set mins = grabacion.duracion // 60 %}
+                    {% set secs = grabacion.duracion % 60 %}
+                    {{ '%02d' % mins }}:{{ '%02d' % secs }}
+                </p>
+                {% if grabacion.claim_id %}
+                <p style="color: #059669; font-size: 0.9em; margin-top: 5px;">
+                    <i class="fas fa-link"></i> Asociado a Reclamo #{{ grabacion.claim_id }}
+                </p>
+                {% elif grabacion.falla_id %}
+                <p style="color: #dc2626; font-size: 0.9em; margin-top: 5px;">
+                    <i class="fas fa-link"></i> Asociado a Falla #{{ -grabacion.falla_id }}
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Reproductor de audio -->
+            {% if grabacion.audio_path %}
+            <div style="margin-bottom: 20px; padding: 15px; background: #f0fdf4; border-radius: 8px; border: 2px solid #22c55e;">
+                <h4 style="margin-bottom: 10px; color: #166534;">
+                    <i class="fas fa-volume-up"></i> Reproducir GrabaciÃ³n
+                </h4>
+                <div style="margin-bottom: 10px; font-size: 0.9em; color: #4b5563;">
+                    <i class="fas fa-file-audio"></i> {{ grabacion.audio_path.split('/')[-1] }}
+                </div>
+                <audio controls style="width: 100%; height: 40px;">
+                    <source src="{{ url_for('static', filename=grabacion.audio_path) }}" type="audio/webm">
+                    Tu navegador no soporta el elemento de audio.
+                </audio>
+                <p style="font-size: 0.85em; color: #6b7280; margin-top: 8px;">
+                    <i class="fas fa-info-circle"></i> Usa los controles para reproducir, pausar o ajustar el volumen.
+                </p>
+            </div>
+            {% else %}
+            <div style="margin-bottom: 20px; padding: 15px; background: #fef2f2; border-radius: 8px; border: 2px solid #ef4444;">
+                <p style="color: #991b1b;">
+                    <i class="fas fa-exclamation-triangle"></i> No hay archivo de audio disponible para esta grabaciÃ³n.
+                </p>
+            </div>
+            {% endif %}
+
+            {% if grabacion.transcripcion %}
+            <div style="margin-bottom: 20px; padding: 15px; background: #eff6ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <h4 style="margin-bottom: 10px; color: #1e40af;">
+                    <i class="fas fa-file-alt"></i> TranscripciÃ³n Actual
+                </h4>
+                <div style="color: #374151; line-height: 1.6; white-space: pre-wrap;">
+                    {{ grabacion.transcripcion }}
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="">
+                <div class="form-group">
+                    <label for="transcripcion">Editar TranscripciÃ³n</label>
+                    <textarea 
+                        id="transcripcion" 
+                        name="transcripcion" 
+                        rows="15" 
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                        placeholder="Escriba o pegue la transcripciÃ³n del audio aquÃ­...">{{ grabacion.transcripcion or '' }}</textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar TranscripciÃ³n
+                    </button>
+                    <a href="{{ url_for('auth.generar_acta', grabacion_id=grabacion.id) }}" class="btn btn-sm" style="background: #059669; color: white;">
+                        <i class="fas fa-file-word"></i> Generar Acta
+                    </a>
+                    <a href="{{ url_for('auth.vista_grabar_reunion') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Auto-resize textarea
+        const textarea = document.getElementById('transcripcion');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    </script>
+</body>
+</html>
